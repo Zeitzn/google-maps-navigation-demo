@@ -1,5 +1,7 @@
 {
   "name": "google-maps-navigation-demo",
-  "integrations": {},
+  "integrations": {
+    "cordova": {}
+  },
   "type": "angular"
 }
