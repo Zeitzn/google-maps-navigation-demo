@@ -248,12 +248,12 @@ export class HomePage {
         rotation: this.navigationInitialized ? 0 : this.magneticHeading,
       });
 
-      let pm = this.map.addMarkerSync({
-        position: {
-          lat: this.latitude,
-          lng: this.longitude
-        },
-      });
+      // let pm = this.map.addMarkerSync({
+      //   position: {
+      //     lat: this.latitude,
+      //     lng: this.longitude
+      //   },
+      // });
 
       if (this.navigationInitialized) {
         this.rotateMap();
