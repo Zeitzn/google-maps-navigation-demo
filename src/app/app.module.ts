@@ -10,6 +10,7 @@ import { DeviceOrientation } from '@ionic-native/device-orientation/ngx';
 import { DeviceMotion } from '@ionic-native/device-motion/ngx';
 import { BackgroundGeolocation } from '@ionic-native/background-geolocation/ngx';
 import { TextToSpeech } from '@ionic-native/text-to-speech/ngx';
+import { BackgroundMode } from '@ionic-native/background-mode/ngx';
 @NgModule({
   declarations: [AppComponent],
   entryComponents: [],
@@ -21,6 +22,7 @@ import { TextToSpeech } from '@ionic-native/text-to-speech/ngx';
     Geolocation,
     DeviceMotion,
     BackgroundGeolocation,
+    BackgroundMode,
     TextToSpeech
   ],
   bootstrap: [AppComponent],

@@ -5,6 +5,7 @@ import {
   BackgroundGeolocationEvents,
   BackgroundGeolocationResponse
 } from '@ionic-native/background-geolocation/ngx';
+import { BackgroundMode } from '@ionic-native/background-mode/ngx';
 import { Platform } from '@ionic/angular';
 import { LocationStateService } from './state-management/location-state.service';
 declare var window;
@@ -17,6 +18,7 @@ export class AppComponent {
   constructor(
     private platform: Platform,
     private backgroundGeolocation: BackgroundGeolocation,
+    private backgroundMode: BackgroundMode,
     private locationStateService:LocationStateService
   ) {
     this.initializeApp();
@@ -24,6 +26,7 @@ export class AppComponent {
 
   initializeApp(){
     this.platform.ready().then(()=>{
+      this.backgroundMode.enable();
       const config: BackgroundGeolocationConfig = {
         // desiredAccuracy: 10,
         desiredAccuracy: 0,

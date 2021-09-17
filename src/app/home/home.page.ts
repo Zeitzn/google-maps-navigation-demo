@@ -89,7 +89,7 @@ export class HomePage {
 
   ionViewDidEnter() {
     // this.loadRequeriments();
-    this.backgroundTrackingService.StartBackgroundTracking();
+    // this.backgroundTrackingService.StartBackgroundTracking();
     this.getLocation();
   }
 
@@ -200,6 +200,11 @@ export class HomePage {
           // loader.dismiss();
         }).finally(() => {
           // loader.dismiss();
+        });
+
+        let watch = this.geolocation.watchPosition();
+        watch.subscribe((data) => {
+          console.log(data)
         });
 
       } else {
