@@ -11,11 +11,18 @@ import { DeviceMotion } from '@ionic-native/device-motion/ngx';
 import { BackgroundGeolocation } from '@ionic-native/background-geolocation/ngx';
 import { TextToSpeech } from '@ionic-native/text-to-speech/ngx';
 import { BackgroundMode } from '@ionic-native/background-mode/ngx';
+import { HttpClientModule, HTTP_INTERCEPTORS } from '@angular/common/http';
+import { AuthInterceptorService } from './services/auth-interceptor.service';
 @NgModule({
   declarations: [AppComponent],
   entryComponents: [],
-  imports: [BrowserModule, IonicModule.forRoot(), AppRoutingModule],
+  imports: [HttpClientModule,BrowserModule, IonicModule.forRoot(), AppRoutingModule],
   providers: [
+    {
+      provide: HTTP_INTERCEPTORS,
+      useClass: AuthInterceptorService,
+      multi: true
+    },
     { provide: RouteReuseStrategy, useClass: IonicRouteStrategy },
     DeviceOrientation,
     Diagnostic,

@@ -51,7 +51,7 @@ export class AppComponent {
         this.backgroundGeolocation.on
         (BackgroundGeolocationEvents.location).subscribe(
           (location:BackgroundGeolocationResponse)=>{
-            console.log(location)
+            // console.log(location)
             // localStorage.setItem("location",JSON.stringify(location));
 
             // this.event.dispatchEvent('backgroundLocation');

@@ -3,13 +3,22 @@ import { DeviceOrientation, DeviceOrientationCompassHeading } from '@ionic-nativ
 import { Platform } from '@ionic/angular';
 import { Diagnostic } from '@ionic-native/diagnostic/ngx';
 import { Geolocation } from '@ionic-native/geolocation/ngx';
-import { GoogleMap, GoogleMapOptions, GoogleMaps, GoogleMapsEvent, Marker } from '@ionic-native/google-maps';
+import { GoogleMap, GoogleMapOptions, GoogleMaps, GoogleMapsEvent, LatLng, Marker, PolylineOptions } from '@ionic-native/google-maps';
 import { DeviceMotion, DeviceMotionAccelerationData } from '@ionic-native/device-motion/ngx';
 import { BackgroundTrackingService } from '../services/background-tracking/background-tracking.service';
 import { LocationStateService } from '../state-management/location-state.service';
 import { TextToSpeech } from '@ionic-native/text-to-speech/ngx';
+import { AuthService } from '../services/auth.service';
+import { DirectionsService } from '../services/directions.service';
 
-declare var plugin;
+// declare var plugin;
+export class StepItem {
+  position:number;
+  selected:boolean;
+  endLocation: any;
+  htmlInstructions: string;
+  startLocation: any;
+}
 @Component({
   selector: 'app-home',
   templateUrl: 'home.page.html',
@@ -26,20 +35,25 @@ export class HomePage {
   positionMarker: Marker;
 
 
+  steps: StepItem[] = [];
+  // selectedStep
+  lastDistanceKm:number=0;
 
   constructor(
     private deviceOrientation: DeviceOrientation,
     private platform: Platform,
     private diagnostic: Diagnostic,
     private geolocation: Geolocation,
-    private deviceMotion: DeviceMotion,
+    // private deviceMotion: DeviceMotion,
     private backgroundTrackingService: BackgroundTrackingService,
     private locationStateService: LocationStateService,
-    private tts: TextToSpeech
+    private tts: TextToSpeech,
+    private authService: AuthService,
+    private directionsApiService: DirectionsService
   ) {
 
 
-    
+
 
     //#region Orientación
     // this.magneticHeading = 0;
@@ -69,20 +83,20 @@ export class HomePage {
     //#endregion
 
     //#region Acelerómetro
-    // Get the device current acceleration
-    this.deviceMotion.getCurrentAcceleration().then(
-      (acceleration: DeviceMotionAccelerationData) => {
-        console.log(acceleration)
-      },
-      (error: any) => {
-        console.log(error)
-      }
-    );
+    // // Get the device current acceleration
+    // this.deviceMotion.getCurrentAcceleration().then(
+    //   (acceleration: DeviceMotionAccelerationData) => {
+    //     console.log(acceleration)
+    //   },
+    //   (error: any) => {
+    //     console.log(error)
+    //   }
+    // );
 
-    // Watch device acceleration
-    var subscription = this.deviceMotion.watchAcceleration().subscribe((acceleration: DeviceMotionAccelerationData) => {
-      console.log(acceleration);
-    });
+    // // Watch device acceleration
+    // var subscription = this.deviceMotion.watchAcceleration().subscribe((acceleration: DeviceMotionAccelerationData) => {
+    //   console.log(acceleration);
+    // });
     //#endregion
 
   }
@@ -92,6 +106,69 @@ export class HomePage {
     // this.backgroundTrackingService.StartBackgroundTracking();
     this.getLocation();
   }
+
+  getRouteInfo() {
+    let user = {
+      username: 'vvsede1',
+      password: '123'
+    };
+    this.authService.login(user).subscribe(result => {
+      console.log(result);
+      this.authService.saveToken(result);
+      let wpt = [];
+      let coord = {
+        origin: {
+          latitude: 6.144651001885719,
+          longitude: -75.63717842102051
+        },
+        destination: {
+          latitude: 6.440097016172582,
+          longitude: -75.32970070838928
+        },
+        waypoints: wpt
+      }
+      this.directionsApiService.getDirections(coord).subscribe((response: any) => {
+        console.log(response)
+        //Renderizamos la ruta
+        let options: PolylineOptions = {
+          points: response['overview_path'],
+          color: '#232C49',
+          width: 8,
+          geodesic: true,
+          clickable: true,
+        };
+
+        this.map.addPolylineSync(options);
+        this.getSteps(response);
+        // this.backgroundTrackingService.StartBackgroundTracking();
+      });
+    });
+  }
+
+
+  getSteps(route) {
+    let position=0;
+    this.steps = [];
+    route.directions.routes.forEach(element => {
+      element.legs.forEach(leg => {
+        leg.steps.forEach((step:StepItem) => {
+          step.position=position;
+          step.selected=false;
+          this.steps.push(step)
+          this.map.addMarkerSync({
+            position: {
+              lat: step.startLocation.lat,
+              lng: step.startLocation.lng
+            }
+          });
+          position++;
+        });
+      });
+    });
+    this.steps[0].selected=true;
+    console.log(this.steps)
+  }
+
 
   async loadRequeriments() {
     await this.loadMap();
@@ -204,7 +281,7 @@ export class HomePage {
 
         let watch = this.geolocation.watchPosition();
         watch.subscribe((data) => {
-          console.log(data)
+
         });
 
       } else {
@@ -220,17 +297,51 @@ export class HomePage {
     });
   }
 
-  speakText(text:string){
+  speakText(text: string) {
     this.tts.speak({
       text,
-      locale:'es-ES'
+      locale: 'es-ES'
     })
-  .then(() => console.log('Success'))
-  .catch((reason: any) => console.log(reason));
+      .then(() => console.log('Success'))
+      .catch((reason: any) => console.log(reason));
   }
 
-  updateMarker(){
+  calculandoDistance:boolean=false;
+  updateMarker() {
     this.locationStateService.execChange.subscribe(data => {
+      
+      let step:StepItem = this.steps.find(x=>x.selected);
+      if(step && this.calculandoDistance==false){
+        console.log("Step position: "+step.position)
+        this.calculandoDistance=true;
+        let position=step.position;
+        let kmDistanceText = this.coordinatesDistance(step.startLocation.lat,step.startLocation.lng,data['latitude'],data['longitude']);
+        let kmDistance = parseFloat(kmDistanceText)
+        console.log(kmDistance)
+        console.log("Last distance: "+this.lastDistanceKm)
+        if(this.lastDistanceKm!=0){
+          if(this.lastDistanceKm<kmDistance){
+            // this.lastDistanceKm = kmDistance;
+            this.steps[position].selected=false;
+            console.log(position<this.steps.length-1)
+            if(position<this.steps.length-1){
+              this.steps[position+1].selected=true;
+            }
+          }else{
+            if(kmDistance<1){
+              console.log("Mostrar instruccion")
+              if(kmDistance<0.1){
+                console.log("Esconder instruccion en "+ (kmDistance*1000) +'metros')
+              }
+            }
+          }
+           this.lastDistanceKm = kmDistance;          
+        }else{
+          this.lastDistanceKm = kmDistance;
+        }
+        this.calculandoDistance = false;
+      }
+      // console.log(data)
       if (this.positionMarker != null) {
         this.positionMarker.remove();
       }
@@ -267,7 +378,50 @@ export class HomePage {
       this.map.animateCamera({
         duration: 500,
         target: { lat: this.latitude, lng: this.longitude }
-      })
+      });
+
+      if(this.navigationInitialized){
+        this.map.setPadding(320,0,0,0)
+      }
+
+      //Prueba de centrado inferior
+      // let offset = 0.002;
+      // let camera = new LatLng(this.latitude+offset , this.longitude);
+      // this.map.animateCamera({
+      //   duration: 500,
+      //   target: camera
+      // });
+      //---------------------------------------------
+
     });
   }
+
+  //#region Utilidades
+  rad(x) {
+    return x * Math.PI / 180;
+  }
+
+  /**
+   * \fn coordinatesDistance().
+   *
+   * \Description: Devuelve la distancia en kilometros entre dos puntos dados por su latitud y longitud
+   *
+   * \param (integer) lat1 : Latitud del punto 1
+   * \param (integer) long1 : Longitud del punto 1
+   * \param (integer) lat2 : Latitud del punto 2
+   * \param (integer) long2 : Longitud del punto 2
+   *
+   * \return (integer) Distancia en kilometros
+   *
+  */
+  coordinatesDistance(lat1, lon1, lat2, lon2) {
+    var R = 6378.137; //Radio de la tierra en km
+    var dLat = this.rad(lat2 - lat1);
+    var dLong = this.rad(lon2 - lon1);
+    var a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(this.rad(lat1)) * Math.cos(this.rad(lat2)) * Math.sin(dLong / 2) * Math.sin(dLong / 2);
+    var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    var d = R * c;
+    return d.toFixed(3); //Retorna tres decimales
+  }
+  //#endregion
 }
