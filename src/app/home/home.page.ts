@@ -17,7 +17,9 @@ export class StepItem {
   selected:boolean;
   endLocation: any;
   htmlInstructions: string;
+  textInstructions:string;
   startLocation: any;
+  instructions:string;
 }
 @Component({
   selector: 'app-home',
@@ -38,7 +40,8 @@ export class HomePage {
   steps: StepItem[] = [];
   // selectedStep
   lastDistanceKm:number=0;
-
+  selectedStep:StepItem;
+  textReaded:boolean=false;
   constructor(
     private deviceOrientation: DeviceOrientation,
     private platform: Platform,
@@ -140,7 +143,7 @@ export class HomePage {
 
         this.map.addPolylineSync(options);
         this.getSteps(response);
-        // this.backgroundTrackingService.StartBackgroundTracking();
+        this.backgroundTrackingService.StartBackgroundTracking();
       });
     });
   }
@@ -154,18 +157,39 @@ export class HomePage {
         leg.steps.forEach((step:StepItem) => {
           step.position=position;
           step.selected=false;
+
+          // let clear1 = step.htmlInstructions.replace('<b>','.');
+          // let clear2 = clear1.replace('</b>','.');
+          // console.log(step.instructions)
+          // let clear1 = step.htmlInstructions.split('<b>').join('.');
+          // let clear2 = clear1.split('</b>').join('.');
+
+          let div = document.createElement("div");
+          div.innerHTML = step.htmlInstructions;
+          let text = div.textContent || div.innerText || "";
+          
+          text = text.split('/').join('.')
+          text = text.split('Cra.').join('Carretera')
+          text = text.split('Calz ').join('Calzada')
+          text = text.split('Calz.').join('Calzada')
+          text = text.split('Cl.').join('Calle')
+          text = text.split('Av.').join('Avenida')
+          
+          step.textInstructions = text;
+          console.log(step.position+' - '+text)
           this.steps.push(step)
           this.map.addMarkerSync({
             position: {
               lat: step.startLocation.lat,
               lng: step.startLocation.lng
-            }
+            },
+            title:step.position.toString()
           });
           position++;
         });
       });
     });
-    this.steps[0].selected=true;
+    // this.steps[0].selected=true;
     console.log(this.steps)
   }
 
@@ -202,6 +226,7 @@ export class HomePage {
 
   initNavigation() {
     this.navigationInitialized = true;
+    this.map.setPadding(this.navigationInitialized?320:0,0,0,0)
     this.map.setCameraTilt(90);
     this.map.setCameraZoom(30);
     this.map.setOptions({ controls: { zoom: false } })
@@ -235,7 +260,260 @@ export class HomePage {
         compass: true,
         zoom: true,
         mapToolbar: false
+      },
+      styles:[
+  {
+    "elementType": "geometry",
+    "stylers": [
+      {
+        "color": "#242f3e"
       }
+    ]
+  },
+  {
+    "elementType": "labels.text.fill",
+    "stylers": [
+      {
+        "color": "#746855"
+      }
+    ]
+  },
+  {
+    "elementType": "labels.text.stroke",
+    "stylers": [
+      {
+        "color": "#242f3e"
+      }
+    ]
+  },
+  {
+    "featureType": "administrative.locality",
+    "elementType": "labels.text.fill",
+    "stylers": [
+      {
+        "color": "#d59563"
+      }
+    ]
+  },
+  {
+    "featureType": "poi",
+    "elementType": "labels.text.fill",
+    "stylers": [
+      {
+        "color": "#d59563"
+      }
+    ]
+  },
+  {
+    "featureType": "poi.park",
+    "elementType": "geometry",
+    "stylers": [
+      {
+        "color": "#263c3f"
+      }
+    ]
+  },
+  {
+    "featureType": "poi.park",
+    "elementType": "labels.text.fill",
+    "stylers": [
+      {
+        "color": "#6b9a76"
+      }
+    ]
+  },
+  {
+    "featureType": "road",
+    "elementType": "geometry",
+    "stylers": [
+      {
+        "color": "#38414e"
+      }
+    ]
+  },
+  {
+    "featureType": "road",
+    "elementType": "geometry.stroke",
+    "stylers": [
+      {
+        "color": "#212a37"
+      }
+    ]
+  },
+  {
+    "featureType": "road",
+    "elementType": "labels.text.fill",
+    "stylers": [
+      {
+        "color": "#9ca5b3"
+      }
+    ]
+  },
+  {
+    "featureType": "road.highway",
+    "elementType": "geometry",
+    "stylers": [
+      {
+        "color": "#746855"
+      }
+    ]
+  },
+  {
+    "featureType": "road.highway",
+    "elementType": "geometry.stroke",
+    "stylers": [
+      {
+        "color": "#1f2835"
+      }
+    ]
+  },
+  {
+    "featureType": "road.highway",
+    "elementType": "labels.text.fill",
+    "stylers": [
+      {
+        "color": "#f3d19c"
+      }
+    ]
+  },
+  {
+    "featureType": "road.highway.controlled_access",
+    "elementType": "geometry.stroke",
+    "stylers": [
+      {
+        "color": "#ffeb3b"
+      },
+      {
+        "weight": 1.5
+      }
+    ]
+  },
+  {
+    "featureType": "transit",
+    "elementType": "geometry",
+    "stylers": [
+      {
+        "color": "#2f3948"
+      }
+    ]
+  },
+  {
+    "featureType": "transit.station",
+    "elementType": "labels.text.fill",
+    "stylers": [
+      {
+        "color": "#d59563"
+      }
+    ]
+  },
+  {
+    "featureType": "water",
+    "elementType": "geometry",
+    "stylers": [
+      {
+        "color": "#17263c"
+      }
+    ]
+  },
+  {
+    "featureType": "water",
+    "elementType": "labels.text.fill",
+    "stylers": [
+      {
+        "color": "#515c6d"
+      }
+    ]
+  },
+  {
+    "featureType": "water",
+    "elementType": "labels.text.stroke",
+    "stylers": [
+      {
+        "color": "#17263c"
+      }
+    ]
+  }
+]
+      // styles: [
+      //   { elementType: "geometry", stylers: [{ color: "#242f3e" }] },
+      //   { elementType: "labels.text.stroke", stylers: [{ color: "#242f3e" }] },
+      //   { elementType: "labels.text.fill", stylers: [{ color: "#746855" }] },
+      //   {
+      //     featureType: "administrative.locality",
+      //     elementType: "labels.text.fill",
+      //     stylers: [{ color: "#d59563" }],
+      //   },
+      //   {
+      //     featureType: "poi",
+      //     elementType: "labels.text.fill",
+      //     stylers: [{ color: "#d59563" }],
+      //   },
+      //   {
+      //     featureType: "poi.park",
+      //     elementType: "geometry",
+      //     stylers: [{ color: "#263c3f" }],
+      //   },
+      //   {
+      //     featureType: "poi.park",
+      //     elementType: "labels.text.fill",
+      //     stylers: [{ color: "#6b9a76" }],
+      //   },
+      //   {
+      //     featureType: "road",
+      //     elementType: "geometry",
+      //     stylers: [{ color: "#38414e" }],
+      //   },
+      //   {
+      //     featureType: "road",
+      //     elementType: "geometry.stroke",
+      //     stylers: [{ color: "#212a37" }],
+      //   },
+      //   {
+      //     featureType: "road",
+      //     elementType: "labels.text.fill",
+      //     stylers: [{ color: "#9ca5b3" }],
+      //   },
+      //   {
+      //     featureType: "road.highway",
+      //     elementType: "geometry",
+      //     stylers: [{ color: "#746855" }],
+      //   },
+      //   {
+      //     featureType: "road.highway",
+      //     elementType: "geometry.stroke",
+      //     stylers: [{ color: "#1f2835" }],
+      //   },
+      //   {
+      //     featureType: "road.highway",
+      //     elementType: "labels.text.fill",
+      //     stylers: [{ color: "#f3d19c" }],
+      //   },
+      //   {
+      //     featureType: "transit",
+      //     elementType: "geometry",
+      //     stylers: [{ color: "#2f3948" }],
+      //   },
+      //   {
+      //     featureType: "transit.station",
+      //     elementType: "labels.text.fill",
+      //     stylers: [{ color: "#d59563" }],
+      //   },
+      //   {
+      //     featureType: "water",
+      //     elementType: "geometry",
+      //     stylers: [{ color: "#17263c" }],
+      //   },
+      //   {
+      //     featureType: "water",
+      //     elementType: "labels.text.fill",
+      //     stylers: [{ color: "#515c6d" }],
+      //   },
+      //   {
+      //     featureType: "water",
+      //     elementType: "labels.text.stroke",
+      //     stylers: [{ color: "#17263c" }],
+      //   },
+      // ],
     };
 
     this.map = GoogleMaps.create('tracking-map', mapOptions);
@@ -310,59 +588,79 @@ export class HomePage {
   updateMarker() {
     this.locationStateService.execChange.subscribe(data => {
       
-      let step:StepItem = this.steps.find(x=>x.selected);
-      if(step && this.calculandoDistance==false){
-        console.log("Step position: "+step.position)
+      
+      if(this.calculandoDistance==false){
         this.calculandoDistance=true;
-        let position=step.position;
-        let kmDistanceText = this.coordinatesDistance(step.startLocation.lat,step.startLocation.lng,data['latitude'],data['longitude']);
-        let kmDistance = parseFloat(kmDistanceText)
-        console.log(kmDistance)
-        console.log("Last distance: "+this.lastDistanceKm)
-        if(this.lastDistanceKm!=0){
-          if(this.lastDistanceKm<kmDistance){
-            // this.lastDistanceKm = kmDistance;
-            this.steps[position].selected=false;
-            console.log(position<this.steps.length-1)
-            if(position<this.steps.length-1){
-              this.steps[position+1].selected=true;
-            }
-          }else{
-            if(kmDistance<1){
-              console.log("Mostrar instruccion")
-              if(kmDistance<0.1){
-                console.log("Esconder instruccion en "+ (kmDistance*1000) +'metros')
-              }
-            }
+        let filteredSteps = this.steps.filter(x=>!x.selected);
+        console.log("Valida distancia en: ", filteredSteps.length+' steps')
+        let step:StepItem = filteredSteps.find(x=>(parseFloat(this.coordinatesDistance(x.startLocation.lat,x.startLocation.lng,data['latitude'],data['longitude']))*1000)<=100);
+        console.log(step)
+        if(step){
+          this.selectedStep = step;
+          if(!this.textReaded){
+            this.steps[this.selectedStep.position].selected=true;
+            // this.steps.splice(this.selectedStep.position,1);            
+            this.textReaded=true;
+            this.speakText(this.selectedStep.textInstructions);
+            // this.textReaded=false;
           }
-           this.lastDistanceKm = kmDistance;          
+        console.log("Step position: "+step.position)
         }else{
-          this.lastDistanceKm = kmDistance;
+          this.textReaded = false
         }
+      //   let position=step.position;
+      //   let kmDistanceText = this.coordinatesDistance(step.startLocation.lat,step.startLocation.lng,data['latitude'],data['longitude']);
+      //   let kmDistance = parseFloat(kmDistanceText)
+      //   console.log(kmDistance)
+      //   console.log("Last distance: "+this.lastDistanceKm)
+      //   if(this.lastDistanceKm!=0){
+      //     if(this.lastDistanceKm<kmDistance){
+      //       // this.lastDistanceKm = kmDistance;
+      //       this.steps[position].selected=false;
+      //       console.log(position<this.steps.length-1)
+      //       if(position<this.steps.length-1){
+      //         this.steps[position+1].selected=true;
+      //       }
+      //     }else{
+      //       if(kmDistance<1){
+      //         console.log("Mostrar instruccion")
+      //         if(kmDistance<0.1){
+      //           console.log("Esconder instruccion en "+ (kmDistance*1000) +'metros')
+      //         }
+      //       }
+      //     }
+      //      this.lastDistanceKm = kmDistance;          
+      //   }else{
+      //     this.lastDistanceKm = kmDistance;
+      //   }
         this.calculandoDistance = false;
       }
+
+
       // console.log(data)
-      if (this.positionMarker != null) {
-        this.positionMarker.remove();
-      }
+      // if (this.positionMarker != null) {
+      //   this.positionMarker.remove();
+      // }
       this.latitude = data['latitude'];
       this.longitude = data['longitude'];
       this.magneticHeading = data['bearing'];
-      this.positionMarker = this.map.addMarkerSync({
-        position: {
-          lat: this.latitude,
-          lng: this.longitude
-        },
-        icon: {
-          url: "./assets/icons/maps/vehicle.png",
-          anchor: {
-            x: 32.5,
-            y: 32.5
-          },
-        },
-        draggable: true,
-        rotation: this.navigationInitialized ? 0 : this.magneticHeading,
-      });
+      this.positionMarker.setPosition({lat:this.latitude,lng:this.longitude});
+      this.positionMarker.setRotation(this.navigationInitialized ? 0 : this.magneticHeading)
+      // this.positionMarker = this.map.addMarkerSync({
+      //   position: {
+      //     lat: this.latitude,
+      //     lng: this.longitude
+      //   },
+      //   icon: {
+      //     url: "./assets/icons/maps/vehicle.png",
+      //     anchor: {
+      //       x: 32.5,
+      //       y: 32.5
+      //     },
+      //   },
+      //   draggable: true,
+      //   rotation: this.navigationInitialized ? 0 : this.magneticHeading,
+      // });
 
       // let pm = this.map.addMarkerSync({
       //   position: {
@@ -381,7 +679,7 @@ export class HomePage {
       });
 
       if(this.navigationInitialized){
-        this.map.setPadding(320,0,0,0)
+        this.map.setPadding(this.navigationInitialized?320:0,0,0,0)
       }
 
       //Prueba de centrado inferior

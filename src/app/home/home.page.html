@@ -1,7 +1,7 @@
 <ion-header [translucent]="true">
   <ion-toolbar>
     <ion-title>
-      Navegación
+      Navegación      
     </ion-title>
     <ion-buttons slot="end">
       <ion-button (click)="getRouteInfo()">
@@ -14,7 +14,7 @@
 <ion-content>
 
   <div class="text-center"
-    style="bottom: 10px; position: absolute; width: 60%; z-index: 10;padding: 0 80px; margin-left: 50px;">
+    style="bottom: 10px; position: absolute; width: 60%; z-index: 10;padding: 0 10px; margin-left: 0;">
     <ion-button (click)="navigationInitialized?stopNavigation():initNavigation()" class="c-navigation-button">
       <div>
         <ion-label>
@@ -39,3 +39,7 @@
     </ion-fab> -->
   </div>
 </ion-content>
+<ion-footer>
+  <h3>Posición: {{selectedStep?.position}}</h3>
+  <div [innerHTML]="selectedStep?.htmlInstructions"></div>
+</ion-footer>
