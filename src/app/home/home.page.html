@@ -1,19 +1,23 @@
-<ion-header [translucent]="true">
-  <ion-toolbar>
+<ion-header [translucent]="true" class="ion-padding-vertical">
+  <ion-toolbar *ngIf="!navigationInitialized">
     <ion-title>
       Navegación      
     </ion-title>
-    <ion-buttons slot="end">
-      <ion-button (click)="getRouteInfo()">
-        <ion-icon name="map"></ion-icon>
-      </ion-button>
-    </ion-buttons>
+    <ion-item>
+      <ion-label>Origen:</ion-label>
+      <ion-input [(ngModel)]="origin" placeholder="lat,lng"></ion-input>
+    </ion-item>
+    <ion-item>
+      <ion-label>Destino:</ion-label>
+      <ion-input [(ngModel)]="destination" placeholder="lat,lng"></ion-input>
+    </ion-item>
+    <!-- <div [innerHTML]="selectedStep?.htmlInstructions"></div> -->
   </ion-toolbar>
 </ion-header>
 
 <ion-content>
-
-  <div class="text-center"
+  <div [innerHTML]="selectedStep?.htmlInstructions"></div>
+  <!-- <div class="text-center"
     style="bottom: 10px; position: absolute; width: 60%; z-index: 10;padding: 0 10px; margin-left: 0;">
     <ion-button (click)="navigationInitialized?stopNavigation():initNavigation()" class="c-navigation-button">
       <div>
@@ -24,14 +28,24 @@
         <ion-label style="font-size: 70%;">Navegación</ion-label>
       </div>
     </ion-button>
-  </div>
+  </div> -->
 
   <div id="tracking-map">
-    <ion-fab vertical="top" horizontal="end" slot="fixed">
+    <ion-fab vertical="top" horizontal="end" >
+      <!-- <ion-fab-button (click)="getRouteInfo()" size="small" [disabled]="origin=='' || destination == ''">
+        <ion-icon class="c-location-icon" name="map"></ion-icon>
+      </ion-fab-button> -->
       <ion-fab-button (click)="getLocation()" size="small">
         <ion-icon class="c-location-icon" name="locate"></ion-icon>
-      </ion-fab-button>
+      </ion-fab-button>     
     </ion-fab>
+
+    <ion-fab vertical="bottom" horizontal="start" >
+      <ion-fab-button (click)="navigationInitialized?stopNavigation():initNavigation()" size="small">
+        <ion-icon class="c-location-icon"[name]="navigationInitialized?'square':'navigate'"></ion-icon>
+      </ion-fab-button> 
+    </ion-fab>
+
     <!-- <ion-fab vertical="top" *ngIf="!navigationInitialized" horizontal="end" style="top:80px" slot="fixed">
       <ion-fab-button (click)="refresh()" size="small">
         <ion-icon class="c-location-icon" name="refresh"></ion-icon>
@@ -39,7 +53,7 @@
     </ion-fab> -->
   </div>
 </ion-content>
-<ion-footer>
+<!-- <ion-footer>
   <h3>Posición: {{selectedStep?.position}}</h3>
   <div [innerHTML]="selectedStep?.htmlInstructions"></div>
-</ion-footer>
+</ion-footer> -->

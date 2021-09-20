@@ -5,7 +5,7 @@ declare var window;
   providedIn: 'root'
 })
 export class BackgroundTrackingService {
-  locations:any;
+  private locations:any;
   constructor(
   ) { }
 

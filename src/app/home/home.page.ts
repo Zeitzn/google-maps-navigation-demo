@@ -1,10 +1,7 @@
 import { Component } from '@angular/core';
-import { DeviceOrientation, DeviceOrientationCompassHeading } from '@ionic-native/device-orientation/ngx';
-import { Platform } from '@ionic/angular';
 import { Diagnostic } from '@ionic-native/diagnostic/ngx';
 import { Geolocation } from '@ionic-native/geolocation/ngx';
-import { GoogleMap, GoogleMapOptions, GoogleMaps, GoogleMapsEvent, LatLng, Marker, PolylineOptions } from '@ionic-native/google-maps';
-import { DeviceMotion, DeviceMotionAccelerationData } from '@ionic-native/device-motion/ngx';
+import { GoogleMap, GoogleMapOptions, GoogleMaps, Marker, Polyline, PolylineOptions } from '@ionic-native/google-maps';
 import { BackgroundTrackingService } from '../services/background-tracking/background-tracking.service';
 import { LocationStateService } from '../state-management/location-state.service';
 import { TextToSpeech } from '@ionic-native/text-to-speech/ngx';
@@ -13,13 +10,13 @@ import { DirectionsService } from '../services/directions.service';
 
 // declare var plugin;
 export class StepItem {
-  position:number;
-  selected:boolean;
+  position: number;
+  selected: boolean;
   endLocation: any;
   htmlInstructions: string;
-  textInstructions:string;
+  textInstructions: string;
   startLocation: any;
-  instructions:string;
+  instructions: string;
 }
 @Component({
   selector: 'app-home',
@@ -36,18 +33,26 @@ export class HomePage {
   map: GoogleMap;
   positionMarker: Marker;
 
-
   steps: StepItem[] = [];
-  // selectedStep
-  lastDistanceKm:number=0;
-  selectedStep:StepItem;
-  textReaded:boolean=false;
+  selectedStep: StepItem;
+  textReaded: boolean = false;
+
+  origin: string = '6.3367287999999995,-75.55958869999999';
+  destination: string = '6.437951699999999,-75.3318156';
+
+  calculatingDistance: boolean = false;
+
+  routePolyline:Polyline;
+
+  // Variables para deslizamiento suave del marcador
+  numDeltas: number = 100;
+  delay: number = 10; //milliseconds
+  i: number = 0;
+  deltaLat: number = 0;
+  deltaLng: number = 0;
   constructor(
-    private deviceOrientation: DeviceOrientation,
-    private platform: Platform,
     private diagnostic: Diagnostic,
     private geolocation: Geolocation,
-    // private deviceMotion: DeviceMotion,
     private backgroundTrackingService: BackgroundTrackingService,
     private locationStateService: LocationStateService,
     private tts: TextToSpeech,
@@ -56,189 +61,100 @@ export class HomePage {
   ) {
 
 
-
-
-    //#region Orientación
-    // this.magneticHeading = 0;
-    // this.platform.ready().then(() => {
-    //   this.deviceOrientation.getCurrentHeading().then(
-    //     (data1: DeviceOrientationCompassHeading) => {
-    //       this.magneticHeading = data1.magneticHeading
-    //       if (this.positionMarker != null) {
-    //         this.positionMarker.setRotation(this.magneticHeading);
-    //       }
-    //     },
-    //     (error: any) => console.log(error + " #Error in getCurrentHeading")
-    //   );
-
-    //   const options = { frequency: 100 };
-    //   const subscription = this.deviceOrientation.watchHeading(options).subscribe(
-    //     (data3: DeviceOrientationCompassHeading) => {
-    //       this.magneticHeading = data3.magneticHeading;
-
-    //       if (this.positionMarker != null) {
-    //         this.positionMarker.setRotation(this.magneticHeading);
-    //       }
-    //     },
-    //     (error: any) => console.log(error + " #Error in watchHeading subscription")
-    //   );
-    // });
-    //#endregion
-
-    //#region Acelerómetro
-    // // Get the device current acceleration
-    // this.deviceMotion.getCurrentAcceleration().then(
-    //   (acceleration: DeviceMotionAccelerationData) => {
-    //     console.log(acceleration)
-    //   },
-    //   (error: any) => {
-    //     console.log(error)
-    //   }
-    // );
-
-    // // Watch device acceleration
-    // var subscription = this.deviceMotion.watchAcceleration().subscribe((acceleration: DeviceMotionAccelerationData) => {
-    //   console.log(acceleration);
-    // });
-    //#endregion
-
   }
 
   ionViewDidEnter() {
-    // this.loadRequeriments();
-    // this.backgroundTrackingService.StartBackgroundTracking();
-    this.getLocation();
+    this.loadMap();
   }
 
-  getRouteInfo() {
-    let user = {
-      username: 'vvsede1',
-      password: '123'
-    };
-    this.authService.login(user).subscribe(result => {
-      console.log(result);
-      this.authService.saveToken(result);
-      let wpt = [];
-      let coord = {
-        origin: {
-          latitude: 6.144651001885719,
-          longitude: -75.63717842102051
-        },
-        destination: {
-          latitude: 6.440097016172582,
-          longitude: -75.32970070838928
-        },
-        waypoints: wpt
-      }
-      this.directionsApiService.getDirections(coord).subscribe((response: any) => {
-        console.log(response)
-        //Renderizamos la ruta
-        let options: PolylineOptions = {
-          points: response['overview_path'],
-          color: '#232C49',
-          width: 8,
-          geodesic: true,
-          clickable: true,
-        };
+  // getRouteInfo() {
+  //   this.backgroundTrackingService.StopBackgroundGeolocation();
+  //   let user = {
+  //     username: 'vvsede1',
+  //     password: '123'
+  //   };
+  //   let originArray: string[] = this.origin.split(',');
+  //   let destinationArray: string[] = this.destination.split(',');
 
-        this.map.addPolylineSync(options);
-        this.getSteps(response);
-        this.backgroundTrackingService.StartBackgroundTracking();
-      });
-    });
-  }
+  //   this.latitude = parseFloat(originArray[0]),
+  //     this.longitude = parseFloat(originArray[1])
 
+  //   this.authService.login(user).subscribe(result => {
+  //     console.log(result);
+  //     this.authService.saveToken(result);
+  //     let wpt = [];
+  //     let coord = {
+  //       origin: {
+  //         latitude: this.latitude,
+  //         longitude: this.longitude
+  //       },
+  //       destination: {
+  //         latitude: parseFloat(destinationArray[0]),
+  //         longitude: parseFloat(destinationArray[1])
+  //       },
+  //       waypoints: wpt
+  //     }
+  //     this.directionsApiService.getDirections(coord).subscribe((response: any) => {
+  //       console.log(response)
+  //       //Renderizamos la ruta
+  //       let options: PolylineOptions = {
+  //         points: response['overview_path'],
+  //         color: '#232C49',
+  //         width: 8,
+  //         geodesic: true,
+  //         clickable: true,
+  //       };
+  //       this.positionMarker.setPosition({ lat: this.latitude, lng: this.longitude });
+  //       this.map.animateCamera({
+  //         duration: 2000,
+  //         target: {
+  //           lat: this.latitude,
+  //           lng: this.longitude
+  //         },
+  //       });
+  //       this.map.addPolylineSync(options);
+  //       this.getSteps(response);
+  //       this.updateMarker();
+  //       this.backgroundTrackingService.StartBackgroundTracking();
+  //     });
+  //   });
+  // }
 
   getSteps(route) {
-    let position=0;
+    let position = 0;
     this.steps = [];
     route.directions.routes.forEach(element => {
       element.legs.forEach(leg => {
-        leg.steps.forEach((step:StepItem) => {
-          step.position=position;
-          step.selected=false;
-
-          // let clear1 = step.htmlInstructions.replace('<b>','.');
-          // let clear2 = clear1.replace('</b>','.');
-          // console.log(step.instructions)
-          // let clear1 = step.htmlInstructions.split('<b>').join('.');
-          // let clear2 = clear1.split('</b>').join('.');
+        leg.steps.forEach((step: StepItem) => {
+          step.position = position;
+          step.selected = false;
 
           let div = document.createElement("div");
           div.innerHTML = step.htmlInstructions;
           let text = div.textContent || div.innerText || "";
-          
+
           text = text.split('/').join('.')
           text = text.split('Cra.').join('Carretera')
           text = text.split('Calz ').join('Calzada')
           text = text.split('Calz.').join('Calzada')
           text = text.split('Cl.').join('Calle')
           text = text.split('Av.').join('Avenida')
-          
+
           step.textInstructions = text;
-          console.log(step.position+' - '+text)
+          console.log(step.position + ' - ' + text)
           this.steps.push(step)
           this.map.addMarkerSync({
             position: {
               lat: step.startLocation.lat,
               lng: step.startLocation.lng
             },
-            title:step.position.toString()
+            title: step.position.toString()
           });
           position++;
         });
       });
     });
-    // this.steps[0].selected=true;
     console.log(this.steps)
-  }
-
-
-  async loadRequeriments() {
-    await this.loadMap();
-  }
-
-  stopNavigation() {
-    this.navigationInitialized = false;
-    this.positionMarker.setRotation(this.magneticHeading);
-    this.map.setOptions(
-      {
-        camera: {
-          duration: 2000,
-          target: {
-            lat: this.latitude,
-            lng: this.longitude
-          },
-          // zoom: 30,
-          zoom: 17,
-          // tilt: 90,//Ángulo horizontal, setear al iniciar navegacion
-
-        },
-        controls: {
-          compass: true,
-          // myLocationButton: true,
-          // myLocation: true,
-          zoom: true,
-          mapToolbar: true
-        }
-      })
-  }
-
-  initNavigation() {
-    this.navigationInitialized = true;
-    this.map.setPadding(this.navigationInitialized?320:0,0,0,0)
-    this.map.setCameraTilt(90);
-    this.map.setCameraZoom(30);
-    this.map.setOptions({ controls: { zoom: false } })
-    this.map.animateCamera({
-      duration: 2000,
-      target: {
-        lat: this.latitude,
-        lng: this.longitude
-      },
-    });
-
-
   }
 
   rotateMap() {
@@ -261,259 +177,8 @@ export class HomePage {
         zoom: true,
         mapToolbar: false
       },
-      styles:[
-  {
-    "elementType": "geometry",
-    "stylers": [
-      {
-        "color": "#242f3e"
-      }
-    ]
-  },
-  {
-    "elementType": "labels.text.fill",
-    "stylers": [
-      {
-        "color": "#746855"
-      }
-    ]
-  },
-  {
-    "elementType": "labels.text.stroke",
-    "stylers": [
-      {
-        "color": "#242f3e"
-      }
-    ]
-  },
-  {
-    "featureType": "administrative.locality",
-    "elementType": "labels.text.fill",
-    "stylers": [
-      {
-        "color": "#d59563"
-      }
-    ]
-  },
-  {
-    "featureType": "poi",
-    "elementType": "labels.text.fill",
-    "stylers": [
-      {
-        "color": "#d59563"
-      }
-    ]
-  },
-  {
-    "featureType": "poi.park",
-    "elementType": "geometry",
-    "stylers": [
-      {
-        "color": "#263c3f"
-      }
-    ]
-  },
-  {
-    "featureType": "poi.park",
-    "elementType": "labels.text.fill",
-    "stylers": [
-      {
-        "color": "#6b9a76"
-      }
-    ]
-  },
-  {
-    "featureType": "road",
-    "elementType": "geometry",
-    "stylers": [
-      {
-        "color": "#38414e"
-      }
-    ]
-  },
-  {
-    "featureType": "road",
-    "elementType": "geometry.stroke",
-    "stylers": [
-      {
-        "color": "#212a37"
-      }
-    ]
-  },
-  {
-    "featureType": "road",
-    "elementType": "labels.text.fill",
-    "stylers": [
-      {
-        "color": "#9ca5b3"
-      }
-    ]
-  },
-  {
-    "featureType": "road.highway",
-    "elementType": "geometry",
-    "stylers": [
-      {
-        "color": "#746855"
-      }
-    ]
-  },
-  {
-    "featureType": "road.highway",
-    "elementType": "geometry.stroke",
-    "stylers": [
-      {
-        "color": "#1f2835"
-      }
-    ]
-  },
-  {
-    "featureType": "road.highway",
-    "elementType": "labels.text.fill",
-    "stylers": [
-      {
-        "color": "#f3d19c"
-      }
-    ]
-  },
-  {
-    "featureType": "road.highway.controlled_access",
-    "elementType": "geometry.stroke",
-    "stylers": [
-      {
-        "color": "#ffeb3b"
-      },
-      {
-        "weight": 1.5
-      }
-    ]
-  },
-  {
-    "featureType": "transit",
-    "elementType": "geometry",
-    "stylers": [
-      {
-        "color": "#2f3948"
-      }
-    ]
-  },
-  {
-    "featureType": "transit.station",
-    "elementType": "labels.text.fill",
-    "stylers": [
-      {
-        "color": "#d59563"
-      }
-    ]
-  },
-  {
-    "featureType": "water",
-    "elementType": "geometry",
-    "stylers": [
-      {
-        "color": "#17263c"
-      }
-    ]
-  },
-  {
-    "featureType": "water",
-    "elementType": "labels.text.fill",
-    "stylers": [
-      {
-        "color": "#515c6d"
-      }
-    ]
-  },
-  {
-    "featureType": "water",
-    "elementType": "labels.text.stroke",
-    "stylers": [
-      {
-        "color": "#17263c"
-      }
-    ]
-  }
-]
-      // styles: [
-      //   { elementType: "geometry", stylers: [{ color: "#242f3e" }] },
-      //   { elementType: "labels.text.stroke", stylers: [{ color: "#242f3e" }] },
-      //   { elementType: "labels.text.fill", stylers: [{ color: "#746855" }] },
-      //   {
-      //     featureType: "administrative.locality",
-      //     elementType: "labels.text.fill",
-      //     stylers: [{ color: "#d59563" }],
-      //   },
-      //   {
-      //     featureType: "poi",
-      //     elementType: "labels.text.fill",
-      //     stylers: [{ color: "#d59563" }],
-      //   },
-      //   {
-      //     featureType: "poi.park",
-      //     elementType: "geometry",
-      //     stylers: [{ color: "#263c3f" }],
-      //   },
-      //   {
-      //     featureType: "poi.park",
-      //     elementType: "labels.text.fill",
-      //     stylers: [{ color: "#6b9a76" }],
-      //   },
-      //   {
-      //     featureType: "road",
-      //     elementType: "geometry",
-      //     stylers: [{ color: "#38414e" }],
-      //   },
-      //   {
-      //     featureType: "road",
-      //     elementType: "geometry.stroke",
-      //     stylers: [{ color: "#212a37" }],
-      //   },
-      //   {
-      //     featureType: "road",
-      //     elementType: "labels.text.fill",
-      //     stylers: [{ color: "#9ca5b3" }],
-      //   },
-      //   {
-      //     featureType: "road.highway",
-      //     elementType: "geometry",
-      //     stylers: [{ color: "#746855" }],
-      //   },
-      //   {
-      //     featureType: "road.highway",
-      //     elementType: "geometry.stroke",
-      //     stylers: [{ color: "#1f2835" }],
-      //   },
-      //   {
-      //     featureType: "road.highway",
-      //     elementType: "labels.text.fill",
-      //     stylers: [{ color: "#f3d19c" }],
-      //   },
-      //   {
-      //     featureType: "transit",
-      //     elementType: "geometry",
-      //     stylers: [{ color: "#2f3948" }],
-      //   },
-      //   {
-      //     featureType: "transit.station",
-      //     elementType: "labels.text.fill",
-      //     stylers: [{ color: "#d59563" }],
-      //   },
-      //   {
-      //     featureType: "water",
-      //     elementType: "geometry",
-      //     stylers: [{ color: "#17263c" }],
-      //   },
-      //   {
-      //     featureType: "water",
-      //     elementType: "labels.text.fill",
-      //     stylers: [{ color: "#515c6d" }],
-      //   },
-      //   {
-      //     featureType: "water",
-      //     elementType: "labels.text.stroke",
-      //     stylers: [{ color: "#17263c" }],
-      //   },
-      // ],
+      styles: []
+
     };
 
     this.map = GoogleMaps.create('tracking-map', mapOptions);
@@ -531,36 +196,36 @@ export class HomePage {
     });
 
     this.positionMarker.setIconAnchor(32.5, 32.5);
-
     this.updateMarker();
+    this.backgroundTrackingService.StartBackgroundTracking();
 
   }
 
   async getLocation() {
+    console.log("GET LOCATION")
     // const loader = await this.serviceProvider.loading('Obteniendo tu ubicación..');
     // loader.present();
     let p = this.diagnostic.isGpsLocationEnabled();
     p.then((available) => {
       if (available) {
+        console.log(available)
         this.geolocation.getCurrentPosition().then((resp) => {
+          console.log(resp)
           this.latitude = resp.coords.latitude;
           this.longitude = resp.coords.longitude;
           console.log(resp)
-          // this.positionToOriginPolyline.remove();
-          // this.updatePosition(resp.coords.latitude, resp.coords.longitude);
-          // this.showRoutePositionToOrigin();
-          // loader.dismiss();
-          this.loadRequeriments();
+          // this.loadRequeriments();
         }).catch((error) => {
+          console.log(error)
           // loader.dismiss();
         }).finally(() => {
           // loader.dismiss();
         });
 
-        let watch = this.geolocation.watchPosition();
-        watch.subscribe((data) => {
+        // let watch = this.geolocation.watchPosition();
+        // watch.subscribe((data) => {
 
-        });
+        // });
 
       } else {
         alert("Activa tu GPS");
@@ -575,143 +240,189 @@ export class HomePage {
     });
   }
 
+  updateMarker() {
+    this.locationStateService.execChange.subscribe(data => {
+      if (this.map != null) {
+        data['latitude'];
+        data['longitude'];
+        this.magneticHeading = data['bearing'];
+        this.transition(data['latitude'], data['longitude']);
+        // this.positionMarker.setRotation(this.navigationInitialized ? 0 : this.magneticHeading);
+
+        // if (this.navigationInitialized) {
+        //   this.map.setPadding(this.navigationInitialized ? 320 : 0, 0, 0, 0)
+        //   this.rotateMap();
+        // }
+
+        if (!this.calculatingDistance && this.navigationInitialized) {
+          this.calculatingDistance = true;
+          let filteredSteps = this.steps.filter(x => !x.selected);
+          let step: StepItem = filteredSteps.find(x => (parseFloat(this.coordinatesDistance(x.startLocation.lat, x.startLocation.lng, data['latitude'], data['longitude'])) * 1000) <= 100);          
+          if (step != null && step !== undefined) {
+            this.selectedStep = step;
+            if (!this.textReaded) {
+              this.steps[this.selectedStep.position].selected = true;
+              // this.steps.splice(this.selectedStep.position,1);            
+              // this.textReaded=true;
+              this.speakText(this.selectedStep.textInstructions);
+            }
+            console.log("Step position: " + step.position)
+          } else {
+            this.textReaded = false
+          }
+          this.calculatingDistance = false;
+        }
+      }
+
+
+
+
+    });
+  }
+
+  //#region Navegación
+  initNavigation() {
+    // this.navigationInitialized = true;
+    // this.map.setPadding(this.navigationInitialized ? 320 : 0, 0, 0, 0)
+    let user = {
+      username: 'vvsede1',
+      password: '123'
+    };
+    let originArray: string[] = this.origin.split(',');
+    let destinationArray: string[] = this.destination.split(',');
+
+    // this.latitude = parseFloat(originArray[0]),
+    // this.longitude = parseFloat(originArray[1])
+
+    this.authService.login(user).subscribe(result => {
+      console.log(result);
+      this.authService.saveToken(result);
+
+      /**
+       * Para generar la ruta se toma en cuenta lo siguente
+       * La posición actual como el origen de la ruta
+       * EL origen del pedido como una Waypoint, el primero
+       * El destino del pedido como el destino de la ruta
+       */
+      let wpt = [];
+      wpt.push({latitude: parseFloat(originArray[0]),longitude: parseFloat(originArray[1])})
+      let coord = {
+        // origin: {
+        //   latitude: parseFloat(originArray[0]),
+        //   longitude: parseFloat(originArray[1])
+        // },
+        origin: {
+          latitude: this.latitude,
+          longitude: this.longitude
+        },
+        destination: {
+          latitude: parseFloat(destinationArray[0]),
+          longitude: parseFloat(destinationArray[1])
+        },
+        waypoints: wpt
+      }
+      this.directionsApiService.getDirections(coord).subscribe((response: any) => {
+        console.log(response)
+        //Renderizamos la ruta
+        var path = response['overview_path'];
+        let options: PolylineOptions = {
+          points: path,
+          color: '#232C49',
+          width: 8,
+          geodesic: true,
+          clickable: true,
+        };
+
+        this.routePolyline = this.map.addPolylineSync(options);
+        // this.positionMarker.setPosition({ lat: this.latitude, lng: this.longitude });
+        // this.map.animateCamera({
+        //   duration: 2000,
+        //   target: {
+        //     lat: this.latitude,
+        //     lng: this.longitude
+        //   },
+        // });
+        this.getSteps(response);
+        // this.updateMarker();
+        this.navigationInitialized = true;
+        // this.backgroundTrackingService.StartBackgroundTracking();
+      });
+    },error=>{
+      alert("Ha ocurrido un error en la autenticación")
+    });
+    //#region Inclinación del mapa
+    /*    
+    this.map.setCameraTilt(90);
+    this.map.setCameraZoom(30);
+    this.map.setOptions({ controls: { zoom: false } })
+    this.map.animateCamera({
+      duration: 2000,
+      target: {
+        lat: this.latitude,
+        lng: this.longitude
+      },
+    });
+    */
+    //#endregion
+
+  }
+
+  stopNavigation() {
+    this.routePolyline.remove();
+    this.navigationInitialized = false;
+    this.map.setPadding(this.navigationInitialized ? 0 : 0, 0, 0, 0)
+    this.positionMarker.setRotation(this.magneticHeading);
+
+    //#region Restaurar estado del mapa inicial
+    /*
+    this.map.setOptions(
+      {
+        camera: {
+          duration: 2000,
+          target: {
+            lat: this.latitude,
+            lng: this.longitude
+          },
+          // zoom: 30,
+          zoom: 17,
+          // tilt: 90,//Ángulo horizontal, setear al iniciar navegacion
+
+        },
+        controls: {
+          compass: true,
+          // myLocationButton: true,
+          // myLocation: true,
+          zoom: true,
+          mapToolbar: true
+        }
+      });
+      */
+    //#endregion
+  }
+  //#endregion
+
+  //#region Utilidades
+  /**
+   * Lee el texto ingresado
+   * @param text Texo a leer
+   */
   speakText(text: string) {
     this.tts.speak({
       text,
       locale: 'es-ES'
     })
-      .then(() => console.log('Success'))
-      .catch((reason: any) => console.log(reason));
-  }
-
-  calculandoDistance:boolean=false;
-  updateMarker() {
-    this.locationStateService.execChange.subscribe(data => {
-      
-      
-      if(this.calculandoDistance==false){
-        this.calculandoDistance=true;
-        let filteredSteps = this.steps.filter(x=>!x.selected);
-        console.log("Valida distancia en: ", filteredSteps.length+' steps')
-        let step:StepItem = filteredSteps.find(x=>(parseFloat(this.coordinatesDistance(x.startLocation.lat,x.startLocation.lng,data['latitude'],data['longitude']))*1000)<=100);
-        console.log(step)
-        if(step){
-          this.selectedStep = step;
-          if(!this.textReaded){
-            this.steps[this.selectedStep.position].selected=true;
-            // this.steps.splice(this.selectedStep.position,1);            
-            this.textReaded=true;
-            this.speakText(this.selectedStep.textInstructions);
-            // this.textReaded=false;
-          }
-        console.log("Step position: "+step.position)
-        }else{
-          this.textReaded = false
-        }
-      //   let position=step.position;
-      //   let kmDistanceText = this.coordinatesDistance(step.startLocation.lat,step.startLocation.lng,data['latitude'],data['longitude']);
-      //   let kmDistance = parseFloat(kmDistanceText)
-      //   console.log(kmDistance)
-      //   console.log("Last distance: "+this.lastDistanceKm)
-      //   if(this.lastDistanceKm!=0){
-      //     if(this.lastDistanceKm<kmDistance){
-      //       // this.lastDistanceKm = kmDistance;
-      //       this.steps[position].selected=false;
-      //       console.log(position<this.steps.length-1)
-      //       if(position<this.steps.length-1){
-      //         this.steps[position+1].selected=true;
-      //       }
-      //     }else{
-      //       if(kmDistance<1){
-      //         console.log("Mostrar instruccion")
-      //         if(kmDistance<0.1){
-      //           console.log("Esconder instruccion en "+ (kmDistance*1000) +'metros')
-      //         }
-      //       }
-      //     }
-      //      this.lastDistanceKm = kmDistance;          
-      //   }else{
-      //     this.lastDistanceKm = kmDistance;
-      //   }
-        this.calculandoDistance = false;
-      }
-
-
-      // console.log(data)
-      // if (this.positionMarker != null) {
-      //   this.positionMarker.remove();
-      // }
-      this.latitude = data['latitude'];
-      this.longitude = data['longitude'];
-      this.magneticHeading = data['bearing'];
-      this.positionMarker.setPosition({lat:this.latitude,lng:this.longitude});
-      this.positionMarker.setRotation(this.navigationInitialized ? 0 : this.magneticHeading)
-      // this.positionMarker = this.map.addMarkerSync({
-      //   position: {
-      //     lat: this.latitude,
-      //     lng: this.longitude
-      //   },
-      //   icon: {
-      //     url: "./assets/icons/maps/vehicle.png",
-      //     anchor: {
-      //       x: 32.5,
-      //       y: 32.5
-      //     },
-      //   },
-      //   draggable: true,
-      //   rotation: this.navigationInitialized ? 0 : this.magneticHeading,
-      // });
-
-      // let pm = this.map.addMarkerSync({
-      //   position: {
-      //     lat: this.latitude,
-      //     lng: this.longitude
-      //   },
-      // });
-
-      if (this.navigationInitialized) {
-        this.rotateMap();
-      }
-
-      this.map.animateCamera({
-        duration: 500,
-        target: { lat: this.latitude, lng: this.longitude }
-      });
-
-      if(this.navigationInitialized){
-        this.map.setPadding(this.navigationInitialized?320:0,0,0,0)
-      }
-
-      //Prueba de centrado inferior
-      // let offset = 0.002;
-      // let camera = new LatLng(this.latitude+offset , this.longitude);
-      // this.map.animateCamera({
-      //   duration: 500,
-      //   target: camera
-      // });
-      //---------------------------------------------
-
-    });
-  }
-
-  //#region Utilidades
-  rad(x) {
-    return x * Math.PI / 180;
+      .then(() => this.textReaded = true)
+      .catch((reason: any) => this.textReaded = true);
   }
 
   /**
-   * \fn coordinatesDistance().
-   *
-   * \Description: Devuelve la distancia en kilometros entre dos puntos dados por su latitud y longitud
-   *
-   * \param (integer) lat1 : Latitud del punto 1
-   * \param (integer) long1 : Longitud del punto 1
-   * \param (integer) lat2 : Latitud del punto 2
-   * \param (integer) long2 : Longitud del punto 2
-   *
-   * \return (integer) Distancia en kilometros
-   *
-  */
+   * Calcúla la distancia entre 2 coordenadas geográficas
+   * @param lat1 
+   * @param lon1 
+   * @param lat2 
+   * @param lon2 
+   * @returns 
+   */
   coordinatesDistance(lat1, lon1, lat2, lon2) {
     var R = 6378.137; //Radio de la tierra en km
     var dLat = this.rad(lat2 - lat1);
@@ -720,6 +431,44 @@ export class HomePage {
     var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     var d = R * c;
     return d.toFixed(3); //Retorna tres decimales
+  }
+
+  rad(x) {
+    return x * Math.PI / 180;
+  }
+  //#endregion
+
+  //#region Deslizamiento suave de marcador 
+
+  /**
+   * Solución obtenida en https://programacion.net/articulo/como_mover_de_manera_sutil_y_suave_un_marcador_en_google_maps_utilizando_javascript_1891
+   * @param new_latitude Nueva latitud
+   * @param new_longitude Nuevla longitud
+   */
+  transition(new_latitude: number, new_longitude: number) {
+    this.i = 0;
+    this.deltaLat = (new_latitude - this.latitude) / this.numDeltas;
+    this.deltaLng = (new_longitude - this.longitude) / this.numDeltas;
+    this.map.animateCamera({
+      duration: 0,
+      target: { lat: this.latitude, lng: this.longitude }
+    });
+    this.moveMarker();
+
+  }
+
+  moveMarker() {
+    this.latitude += this.deltaLat;
+    this.longitude += this.deltaLng;
+    this.positionMarker.setPosition({ lat: this.latitude, lng: this.longitude });
+    // this.positionMarker.setRotation(this.navigationInitialized ? 0 : this.magneticHeading);
+    this.positionMarker.setRotation(this.magneticHeading);
+    if (this.i != this.numDeltas) {
+      this.i++;
+      setTimeout(() => {
+        this.moveMarker();
+      }, this.delay);
+    }
   }
   //#endregion
 }

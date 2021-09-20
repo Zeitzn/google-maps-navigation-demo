@@ -3,7 +3,8 @@ import {
   BackgroundGeolocation,
   BackgroundGeolocationConfig,
   BackgroundGeolocationEvents,
-  BackgroundGeolocationResponse
+  BackgroundGeolocationLocationProvider,
+  BackgroundGeolocationResponse  
 } from '@ionic-native/background-geolocation/ngx';
 import { BackgroundMode } from '@ionic-native/background-mode/ngx';
 import { Platform } from '@ionic/angular';
@@ -30,7 +31,7 @@ export class AppComponent {
       const config: BackgroundGeolocationConfig = {
         // desiredAccuracy: 10,
         desiredAccuracy: 0,
-        // desiredAccuracy: BackgroundGeolocationAccuracy.HIGH,
+        // desiredAccuracy: BackgroundGeolocationAccuracy,
         // stationaryRadius: 20,
         stationaryRadius: 2,
         // distanceFilter: 30,
@@ -39,11 +40,11 @@ export class AppComponent {
         stopOnTerminate: true, // Si pones este en verdadero, la aplicación dejará de trackear la localización cuando la app se haya cerrado.
 
         //Estas solo están disponibles para Android
-        locationProvider: 1, //Será el proveedor de localización. Gps, Wifi, Gms, etc...
-        // locationProvider:BackgroundGeolocationLocationProvider.ACTIVITY_PROVIDER,
+        // locationProvider: 1, //Será el proveedor de localización. Gps, Wifi, Gms, etc...
+        locationProvider:BackgroundGeolocationLocationProvider.ACTIVITY_PROVIDER,
         startForeground: true,
-        interval: 100, //El intervalo en el que se comprueba la localización.
-        fastestInterval: 50, //Este para cuando está en movimiento.
+        interval: 10, //El intervalo en el que se comprueba la localización.
+        fastestInterval: 10, //Este para cuando está en movimiento.
         //  activitiesInterval: 10000, //Este es para cuando está realizando alguna actividad con el dispositivo.
       };
 
@@ -56,6 +57,7 @@ export class AppComponent {
 
             // this.event.dispatchEvent('backgroundLocation');
             this.locationStateService.change(location);
+            // console.log(location)
           }
         );
       });
