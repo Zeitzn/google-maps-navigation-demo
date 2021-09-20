@@ -28,6 +28,9 @@ export class AppComponent {
   initializeApp(){
     this.platform.ready().then(()=>{
       this.backgroundMode.enable();
+      /**
+       * Referencia: https://como-programar.net/ionic/background-geolocation/
+       */
       const config: BackgroundGeolocationConfig = {
         // desiredAccuracy: 10,
         desiredAccuracy: 0,
@@ -35,7 +38,7 @@ export class AppComponent {
         // stationaryRadius: 20,
         stationaryRadius: 2,
         // distanceFilter: 30,
-        distanceFilter: 3,
+        distanceFilter: 1,
         debug: false, //  Esto hace que el dispositivo emita sonidos cuando lanza un evento de localización
         stopOnTerminate: true, // Si pones este en verdadero, la aplicación dejará de trackear la localización cuando la app se haya cerrado.
 
@@ -43,8 +46,8 @@ export class AppComponent {
         // locationProvider: 1, //Será el proveedor de localización. Gps, Wifi, Gms, etc...
         locationProvider:BackgroundGeolocationLocationProvider.ACTIVITY_PROVIDER,
         startForeground: true,
-        interval: 10, //El intervalo en el que se comprueba la localización.
-        fastestInterval: 10, //Este para cuando está en movimiento.
+        interval: 50, //El intervalo en el que se comprueba la localización.
+        fastestInterval: 50, //Este para cuando está en movimiento.
         //  activitiesInterval: 10000, //Este es para cuando está realizando alguna actividad con el dispositivo.
       };
 

@@ -45,7 +45,7 @@ export class HomePage {
   routePolyline:Polyline;
 
   // Variables para deslizamiento suave del marcador
-  numDeltas: number = 10;
+  numDeltas: number = 100;
   delay: number = 10; //milliseconds
   i: number = 0;
   deltaLat: number = 0;
@@ -184,22 +184,20 @@ export class HomePage {
     this.map = GoogleMaps.create('tracking-map', mapOptions);
 
 
-    // // this.positionMarker = this.map.addMarkerSync({
-    // //   position: {
-    // //     lat: this.latitude,
-    // //     lng: this.longitude
-    // //   },
-    // //   icon: {
-    // //     url: "./assets/icons/maps/navigation-48.png"
-    // //   },
-    // //   rotation: this.magneticHeading,
-    // // });
+    this.positionMarker = this.map.addMarkerSync({
+      position: {
+        lat: this.latitude,
+        lng: this.longitude
+      },
+      icon: {
+        url: "./assets/icons/maps/navigation-48.png"
+      },
+      rotation: this.magneticHeading,
+    });
 
-    // // this.positionMarker.setIconAnchor(24, 24);
-    // // this.updateMarker();
-    // // this.backgroundTrackingService.StartBackgroundTracking();
-
-    this.getLocation();
+    this.positionMarker.setIconAnchor(24, 24);
+    this.updateMarker();
+    this.backgroundTrackingService.StartBackgroundTracking();
 
   }
 
@@ -216,21 +214,7 @@ export class HomePage {
           this.latitude = resp.coords.latitude;
           this.longitude = resp.coords.longitude;
           console.log(resp)
-
-          this.positionMarker = this.map.addMarkerSync({
-            position: {
-              lat: this.latitude,
-              lng: this.longitude
-            },
-            icon: {
-              url: "./assets/icons/maps/navigation-48.png"
-            },
-            rotation: this.magneticHeading,
-          });
-
-          this.positionMarker.setIconAnchor(24, 24);
-          this.updateMarker();
-          this.backgroundTrackingService.StartBackgroundTracking();
+          // this.loadRequeriments();
         }).catch((error) => {
           console.log(error)
           // loader.dismiss();
@@ -261,16 +245,8 @@ export class HomePage {
       if (this.map != null) {
         data['latitude'];
         data['longitude'];
-        // this.map.addMarkerSync({
-        //   position: {
-        //     lat: data['latitude'],
-        //     lng: data['longitude']
-        //   }
-        // });
         this.magneticHeading = data['bearing'];
-        // this.updateCameraPosition(data['latitude'], data['longitude']);
-        this.transition(data['latitude'], data['longitude']);        
-        // this.transition(data['latitude'], data['longitude']);
+        this.transition(data['latitude'], data['longitude']);
         // this.positionMarker.setRotation(this.navigationInitialized ? 0 : this.magneticHeading);
 
         // if (this.navigationInitialized) {
@@ -298,13 +274,9 @@ export class HomePage {
         }
       }
 
-    });
-  }
 
-  updateCameraPosition(latitude:number, longitude:number){
-    this.map.moveCamera({
-      // duration: 2000,
-      target: { lat: latitude, lng: longitude },
+
+
     });
   }
 
@@ -473,18 +445,15 @@ export class HomePage {
    * @param new_latitude Nueva latitud
    * @param new_longitude Nuevla longitud
    */
-  async transition(new_latitude: number, new_longitude: number) {
+  transition(new_latitude: number, new_longitude: number) {
     this.i = 0;
     this.deltaLat = (new_latitude - this.latitude) / this.numDeltas;
     this.deltaLng = (new_longitude - this.longitude) / this.numDeltas;
-    // this.map.animateCamera({
-    //   duration: 0,
-    //   target: { lat: this.latitude, lng: this.longitude }
-    // });
-    
-    this.moveMarker()
-    // this.updateCameraPosition(new_latitude, new_longitude);
-    // await Promise.all([this.updateCameraPosition(new_latitude, new_longitude), this.moveMarker()]);   
+    this.map.animateCamera({
+      duration: 0,
+      target: { lat: this.latitude, lng: this.longitude }
+    });
+    this.moveMarker();
 
   }
 
@@ -492,10 +461,8 @@ export class HomePage {
     this.latitude += this.deltaLat;
     this.longitude += this.deltaLng;
     this.positionMarker.setPosition({ lat: this.latitude, lng: this.longitude });
-    this.updateCameraPosition(this.latitude, this.longitude);
     // this.positionMarker.setRotation(this.navigationInitialized ? 0 : this.magneticHeading);
     this.positionMarker.setRotation(this.magneticHeading);
-    
     if (this.i != this.numDeltas) {
       this.i++;
       setTimeout(() => {
