@@ -83,16 +83,16 @@ export class HomePage {
         zoom: 17,
       },
       controls: {
-        compass: true,
+        // compass: true,
         zoom: true,
-        mapToolbar: false
+        mapToolbar: false,
+
       },
       styles: []
 
     };
 
     this.map = GoogleMaps.create('tracking-map', mapOptions);
-
     this.getLocation();
 
   }
@@ -119,11 +119,11 @@ export class HomePage {
             },
             rotation: this.magneticHeading,
           });
-          this.positionMarker.setIconAnchor(24, 24);
-          // this.goToPosition();
+          this.positionMarker.setIconAnchor(24, 24);          
           this.updateMarker();
           this.loading.dismiss();
-          await this.getRouteInfo();
+          // this.initNavigation();
+          // await this.getRouteInfo();//TODO Descomentar para iniciar mostrando la ruta
           this.backgroundTrackingService.StartBackgroundTracking();
         }).catch((error) => {
           console.log(error)
@@ -227,14 +227,16 @@ export class HomePage {
     // await this.getRouteInfo();
     this.goToPosition();
     this.map.setCameraZoom(17);
+    // this.map.setCameraTilt(70);
     this.navigationInitialized = true;    
 
   }
 
   stopNavigation() {
-    this.routePolyline.remove();
     this.navigationInitialized = false;
-    this.map.setPadding(this.navigationInitialized ? 0 : 0, 0, 0, 0)
+    this.map.setCameraBearing(0);
+    this.map.setPadding(this.navigationInitialized ? 0 : 0, 0, 0, 0)    
+    // this.routePolyline.remove();
     // this.positionMarker.setRotation(this.magneticHeading);
 
     //#region Restaurar estado inicial del mapa
@@ -312,6 +314,7 @@ export class HomePage {
 
   goToPosition() {
     this.map.animateCamera({
+      duration:500,
       target: {
         lat: this.latitude,
         lng: this.longitude
@@ -358,11 +361,19 @@ export class HomePage {
 
   updateMarker() {
     this.locationStateService.execChange.subscribe(data => {
-      console.log(data)
+      console.log(data['bearing'])
       if (this.map != null) {
         data['latitude'];
         data['longitude'];
         this.magneticHeading = data['bearing'];
+        if(this.navigationInitialized){
+          this.magneticHeading = 15;
+          this.map.setCameraBearing(data['bearing']-15);
+          // this.map.animateCamera({
+          //   bearing:data['bearing']-15,
+          // })
+        }
+
         this.transition(data['latitude'], data['longitude']);
         this.checkStep(data['latitude'], data['longitude']);        
       }
