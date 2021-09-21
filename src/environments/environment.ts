@@ -5,8 +5,8 @@
 export const environment = {
   production: false,
   config:{
-    host:'https://backend-dev.mivolco.com/',
-    // host:'http://192.168.1.9:8080/',
+    // host:'https://backend-dev.mivolco.com/',
+    host:'http://192.168.1.9:8080/',
     token_name:'token'
   }
 };

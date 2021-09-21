@@ -1,12 +1,13 @@
 import { Component } from '@angular/core';
 import { Diagnostic } from '@ionic-native/diagnostic/ngx';
 import { Geolocation } from '@ionic-native/geolocation/ngx';
-import { GoogleMap, GoogleMapOptions, GoogleMaps, Marker, Polyline, PolylineOptions } from '@ionic-native/google-maps';
+import { GoogleMap, GoogleMapOptions, GoogleMaps, Marker, Polyline, PolylineOptions, LatLngBounds, GroundOverlayOptions } from '@ionic-native/google-maps';
 import { BackgroundTrackingService } from '../services/background-tracking/background-tracking.service';
 import { LocationStateService } from '../state-management/location-state.service';
 import { TextToSpeech } from '@ionic-native/text-to-speech/ngx';
 import { AuthService } from '../services/auth.service';
 import { DirectionsService } from '../services/directions.service';
+import { LoadingController } from '@ionic/angular';
 
 // declare var plugin;
 export class StepItem {
@@ -42,14 +43,19 @@ export class HomePage {
 
   calculatingDistance: boolean = false;
 
-  routePolyline:Polyline;
+  routePolyline: Polyline;
 
   // Variables para deslizamiento suave del marcador
-  numDeltas: number = 10;
+  numDeltas: number = 20;
   delay: number = 10; //milliseconds
   i: number = 0;
   deltaLat: number = 0;
   deltaLng: number = 0;
+
+  //Indica si el mapa esta inclinado
+  inclined: boolean = false;
+
+  loading: any;
   constructor(
     private diagnostic: Diagnostic,
     private geolocation: Geolocation,
@@ -57,113 +63,17 @@ export class HomePage {
     private locationStateService: LocationStateService,
     private tts: TextToSpeech,
     private authService: AuthService,
-    private directionsApiService: DirectionsService
+    private directionsApiService: DirectionsService,
+    private loadingController: LoadingController
   ) {
-
-
   }
 
   ionViewDidEnter() {
     this.loadMap();
   }
 
-  // getRouteInfo() {
-  //   this.backgroundTrackingService.StopBackgroundGeolocation();
-  //   let user = {
-  //     username: 'vvsede1',
-  //     password: '123'
-  //   };
-  //   let originArray: string[] = this.origin.split(',');
-  //   let destinationArray: string[] = this.destination.split(',');
-
-  //   this.latitude = parseFloat(originArray[0]),
-  //     this.longitude = parseFloat(originArray[1])
-
-  //   this.authService.login(user).subscribe(result => {
-  //     console.log(result);
-  //     this.authService.saveToken(result);
-  //     let wpt = [];
-  //     let coord = {
-  //       origin: {
-  //         latitude: this.latitude,
-  //         longitude: this.longitude
-  //       },
-  //       destination: {
-  //         latitude: parseFloat(destinationArray[0]),
-  //         longitude: parseFloat(destinationArray[1])
-  //       },
-  //       waypoints: wpt
-  //     }
-  //     this.directionsApiService.getDirections(coord).subscribe((response: any) => {
-  //       console.log(response)
-  //       //Renderizamos la ruta
-  //       let options: PolylineOptions = {
-  //         points: response['overview_path'],
-  //         color: '#232C49',
-  //         width: 8,
-  //         geodesic: true,
-  //         clickable: true,
-  //       };
-  //       this.positionMarker.setPosition({ lat: this.latitude, lng: this.longitude });
-  //       this.map.animateCamera({
-  //         duration: 2000,
-  //         target: {
-  //           lat: this.latitude,
-  //           lng: this.longitude
-  //         },
-  //       });
-  //       this.map.addPolylineSync(options);
-  //       this.getSteps(response);
-  //       this.updateMarker();
-  //       this.backgroundTrackingService.StartBackgroundTracking();
-  //     });
-  //   });
-  // }
-
-  getSteps(route) {
-    let position = 0;
-    this.steps = [];
-    route.directions.routes.forEach(element => {
-      element.legs.forEach(leg => {
-        leg.steps.forEach((step: StepItem) => {
-          step.position = position;
-          step.selected = false;
-
-          let div = document.createElement("div");
-          div.innerHTML = step.htmlInstructions;
-          let text = div.textContent || div.innerText || "";
-
-          text = text.split('/').join('.')
-          text = text.split('Cra.').join('Carretera')
-          text = text.split('Calz ').join('Calzada')
-          text = text.split('Calz.').join('Calzada')
-          text = text.split('Cl.').join('Calle')
-          text = text.split('Av.').join('Avenida')
-
-          step.textInstructions = text;
-          console.log(step.position + ' - ' + text)
-          this.steps.push(step)
-          this.map.addMarkerSync({
-            position: {
-              lat: step.startLocation.lat,
-              lng: step.startLocation.lng
-            },
-            title: step.position.toString()
-          });
-          position++;
-        });
-      });
-    });
-    console.log(this.steps)
-  }
-
-  rotateMap() {
-    this.map.setCameraBearing(this.magneticHeading)
-  }
 
   async loadMap() {
-
-
     let mapOptions: GoogleMapOptions = {
       camera: {
         target: {
@@ -183,40 +93,22 @@ export class HomePage {
 
     this.map = GoogleMaps.create('tracking-map', mapOptions);
 
-
-    // // this.positionMarker = this.map.addMarkerSync({
-    // //   position: {
-    // //     lat: this.latitude,
-    // //     lng: this.longitude
-    // //   },
-    // //   icon: {
-    // //     url: "./assets/icons/maps/navigation-48.png"
-    // //   },
-    // //   rotation: this.magneticHeading,
-    // // });
-
-    // // this.positionMarker.setIconAnchor(24, 24);
-    // // this.updateMarker();
-    // // this.backgroundTrackingService.StartBackgroundTracking();
-
     this.getLocation();
 
   }
 
   async getLocation() {
-    console.log("GET LOCATION")
-    // const loader = await this.serviceProvider.loading('Obteniendo tu ubicación..');
-    // loader.present();
+    this.loading = await this.loadingController.create({
+      message: 'Obteniendo tu ubicación'
+    });
+    this.loading.present();
+
     let p = this.diagnostic.isGpsLocationEnabled();
     p.then((available) => {
       if (available) {
-        console.log(available)
-        this.geolocation.getCurrentPosition().then((resp) => {
-          console.log(resp)
+        this.geolocation.getCurrentPosition({ enableHighAccuracy: true, timeout: 5000 }).then(async (resp) => {
           this.latitude = resp.coords.latitude;
           this.longitude = resp.coords.longitude;
-          console.log(resp)
-
           this.positionMarker = this.map.addMarkerSync({
             position: {
               lat: this.latitude,
@@ -227,113 +119,56 @@ export class HomePage {
             },
             rotation: this.magneticHeading,
           });
-
           this.positionMarker.setIconAnchor(24, 24);
+          // this.goToPosition();
           this.updateMarker();
+          this.loading.dismiss();
+          await this.getRouteInfo();
           this.backgroundTrackingService.StartBackgroundTracking();
         }).catch((error) => {
           console.log(error)
-          // loader.dismiss();
+          this.loading.dismiss();
         }).finally(() => {
-          // loader.dismiss();
+          this.loading.dismiss();
         });
-
-        // let watch = this.geolocation.watchPosition();
-        // watch.subscribe((data) => {
-
-        // });
 
       } else {
         alert("Activa tu GPS");
-        // loader.dismiss();
+        this.loading.dismiss();
         // this._mensaje.showAlert('Mensaje', 'Active su GPS para obtener su ubicación').then(a => {
-        // loader.dismiss();
+        this.loading.dismiss();
 
         // });
       }
     }).catch(error => {
-      // loader.dismiss();
+      this.loading.dismiss();
     });
   }
 
-  updateMarker() {
-    this.locationStateService.execChange.subscribe(data => {
-      if (this.map != null) {
-        data['latitude'];
-        data['longitude'];
-        // this.map.addMarkerSync({
-        //   position: {
-        //     lat: data['latitude'],
-        //     lng: data['longitude']
-        //   }
-        // });
-        this.magneticHeading = data['bearing'];
-        // this.updateCameraPosition(data['latitude'], data['longitude']);
-        this.transition(data['latitude'], data['longitude']);        
-        // this.transition(data['latitude'], data['longitude']);
-        // this.positionMarker.setRotation(this.navigationInitialized ? 0 : this.magneticHeading);
-
-        // if (this.navigationInitialized) {
-        //   this.map.setPadding(this.navigationInitialized ? 320 : 0, 0, 0, 0)
-        //   this.rotateMap();
-        // }
-
-        if (!this.calculatingDistance && this.navigationInitialized) {
-          this.calculatingDistance = true;
-          let filteredSteps = this.steps.filter(x => !x.selected);
-          let step: StepItem = filteredSteps.find(x => (parseFloat(this.coordinatesDistance(x.startLocation.lat, x.startLocation.lng, data['latitude'], data['longitude'])) * 1000) <= 100);          
-          if (step != null && step !== undefined) {
-            this.selectedStep = step;
-            if (!this.textReaded) {
-              this.steps[this.selectedStep.position].selected = true;
-              // this.steps.splice(this.selectedStep.position,1);            
-              // this.textReaded=true;
-              this.speakText(this.selectedStep.textInstructions);
-            }
-            console.log("Step position: " + step.position)
-          } else {
-            this.textReaded = false
-          }
-          this.calculatingDistance = false;
-        }
-      }
-
+  //#region Ruta
+  async getRouteInfo() {
+    this.loading = await this.loadingController.create({
+      message: 'Obteniendo datos de la ruta'
     });
-  }
-
-  updateCameraPosition(latitude:number, longitude:number){
-    this.map.moveCamera({
-      // duration: 2000,
-      target: { lat: latitude, lng: longitude },
-    });
-  }
-
-  //#region Navegación
-  initNavigation() {
-    // this.navigationInitialized = true;
-    // this.map.setPadding(this.navigationInitialized ? 320 : 0, 0, 0, 0)
+    this.loading.present();
     let user = {
       username: 'vvsede1',
       password: '123'
     };
     let originArray: string[] = this.origin.split(',');
     let destinationArray: string[] = this.destination.split(',');
-
-    // this.latitude = parseFloat(originArray[0]),
-    // this.longitude = parseFloat(originArray[1])
-
     this.authService.login(user).subscribe(result => {
       console.log(result);
       this.authService.saveToken(result);
 
       /**
-       * Para generar la ruta se toma en cuenta lo siguente
+       * Para generar la ruta se toma en cuenta lo siguiente
        * La posición actual como el origen de la ruta
-       * EL origen del pedido como una Waypoint, el primero
+       * EL origen del pedido como un Waypoint, el primero
        * El destino del pedido como el destino de la ruta
        */
       let wpt = [];
-      wpt.push({latitude: parseFloat(originArray[0]),longitude: parseFloat(originArray[1])})
+      wpt.push({ latitude: parseFloat(originArray[0]), longitude: parseFloat(originArray[1]) })
       let coord = {
         // origin: {
         //   latitude: parseFloat(originArray[0]),
@@ -362,36 +197,37 @@ export class HomePage {
         };
 
         this.routePolyline = this.map.addPolylineSync(options);
-        // this.positionMarker.setPosition({ lat: this.latitude, lng: this.longitude });
-        // this.map.animateCamera({
-        //   duration: 2000,
-        //   target: {
-        //     lat: this.latitude,
-        //     lng: this.longitude
-        //   },
-        // });
-        this.getSteps(response);
-        // this.updateMarker();
-        this.navigationInitialized = true;
-        // this.backgroundTrackingService.StartBackgroundTracking();
+
+        let bounds = new LatLngBounds();
+        path.forEach(element => {
+          bounds.extend(element);
+        });
+
+        this.map.animateCamera({
+          target: path,
+          tilt: 0,
+          duration: 1000
+        });
+
+        this.formatSteps(response);
+        this.loading.dismiss();
+      }, error => {
+        this.loading.dismiss();
+        alert("No se ha encontrado información de la ruta");
       });
-    },error=>{
-      alert("Ha ocurrido un error en la autenticación")
+    }, error => {
+      this.loading.dismiss();
+      alert("Ha ocurrido un error en la autenticación");
     });
-    //#region Inclinación del mapa
-    /*    
-    this.map.setCameraTilt(90);
-    this.map.setCameraZoom(30);
-    this.map.setOptions({ controls: { zoom: false } })
-    this.map.animateCamera({
-      duration: 2000,
-      target: {
-        lat: this.latitude,
-        lng: this.longitude
-      },
-    });
-    */
-    //#endregion
+  }
+  //#endregion
+
+  //#region Navegación
+  async initNavigation() {
+    // await this.getRouteInfo();
+    this.goToPosition();
+    this.map.setCameraZoom(17);
+    this.navigationInitialized = true;    
 
   }
 
@@ -399,9 +235,9 @@ export class HomePage {
     this.routePolyline.remove();
     this.navigationInitialized = false;
     this.map.setPadding(this.navigationInitialized ? 0 : 0, 0, 0, 0)
-    this.positionMarker.setRotation(this.magneticHeading);
+    // this.positionMarker.setRotation(this.magneticHeading);
 
-    //#region Restaurar estado del mapa inicial
+    //#region Restaurar estado inicial del mapa
     /*
     this.map.setOptions(
       {
@@ -430,6 +266,58 @@ export class HomePage {
   //#endregion
 
   //#region Utilidades
+
+
+  formatSteps(route) {
+    let position = 0;
+    this.steps = [];
+    route.directions.routes.forEach(element => {
+      element.legs.forEach(leg => {
+        leg.steps.forEach((step: StepItem) => {
+          step.position = position;
+          step.selected = false;
+
+          let div = document.createElement("div");
+          div.innerHTML = step.htmlInstructions;
+          let text = div.textContent || div.innerText || "";
+
+          text = text.split('/').join('.')
+          text = text.split('Cra.').join('Carretera ');
+          text = text.split('Calz ').join('Calzada ');
+          text = text.split('Calz.').join('Calzada ');
+          text = text.split('Cl.').join('Calle ');
+          text = text.split('Av.').join('Avenida ');
+          text = text.split('Nrte.').join('Norte ');
+          text = text.split('Nte.').join('Norte ');
+          text = text.split('Nrte ').join('Norte ');
+          text = text.split('Nte ').join('Norte ');
+
+          step.textInstructions = text;
+          console.log(step.position + ' - ' + text)
+          this.steps.push(step)
+          this.map.addMarkerSync({
+            position: {
+              lat: step.startLocation.lat,
+              lng: step.startLocation.lng
+            },
+            title: step.position.toString()
+          });
+          position++;
+        });
+      });
+    });
+    console.log(this.steps)
+    this.map.setPadding(300, 0, 0, 0);
+  }
+
+  goToPosition() {
+    this.map.animateCamera({
+      target: {
+        lat: this.latitude,
+        lng: this.longitude
+      }
+    });
+  }
   /**
    * Lee el texto ingresado
    * @param text Texo a leer
@@ -468,6 +356,50 @@ export class HomePage {
 
   //#region Deslizamiento suave de marcador 
 
+  updateMarker() {
+    this.locationStateService.execChange.subscribe(data => {
+      console.log(data)
+      if (this.map != null) {
+        data['latitude'];
+        data['longitude'];
+        this.magneticHeading = data['bearing'];
+        this.transition(data['latitude'], data['longitude']);
+        this.checkStep(data['latitude'], data['longitude']);        
+      }
+
+    });
+  }
+
+  /**
+   * Verifica la instrucción a leer
+   * @param latitude Latitud
+   * @param longitude Longitude
+   */
+  checkStep(latitude:number, longitude:number){
+    if (!this.calculatingDistance && this.navigationInitialized) {
+      this.calculatingDistance = true;
+      let filteredSteps = this.steps.filter(x => !x.selected);
+      let step: StepItem = filteredSteps.find(x => (parseFloat(this.coordinatesDistance(x.startLocation.lat, x.startLocation.lng, latitude, longitude)) * 1000) <= 100);
+      if (step != null && step !== undefined) {
+        this.selectedStep = step;
+        if (!this.textReaded) {
+          this.steps[this.selectedStep.position].selected = true;
+          this.speakText(this.selectedStep.textInstructions);
+        }
+        console.log("Step position: " + step.position)
+      } else {
+        this.textReaded = false
+      }
+      this.calculatingDistance = false;
+    }
+  }
+
+  updateCameraPosition(latitude: number, longitude: number) {
+    this.map.moveCamera({
+      target: { lat: latitude, lng: longitude },
+    });
+  }
+
   /**
    * Solución obtenida en https://programacion.net/articulo/como_mover_de_manera_sutil_y_suave_un_marcador_en_google_maps_utilizando_javascript_1891
    * @param new_latitude Nueva latitud
@@ -481,8 +413,9 @@ export class HomePage {
     //   duration: 0,
     //   target: { lat: this.latitude, lng: this.longitude }
     // });
-    
+
     this.moveMarker()
+    // if(this.inclined)this.updateCameraPosition(new_latitude, new_longitude);
     // this.updateCameraPosition(new_latitude, new_longitude);
     // await Promise.all([this.updateCameraPosition(new_latitude, new_longitude), this.moveMarker()]);   
 
@@ -491,11 +424,11 @@ export class HomePage {
   moveMarker() {
     this.latitude += this.deltaLat;
     this.longitude += this.deltaLng;
-    this.positionMarker.setPosition({ lat: this.latitude, lng: this.longitude });
-    this.updateCameraPosition(this.latitude, this.longitude);
-    // this.positionMarker.setRotation(this.navigationInitialized ? 0 : this.magneticHeading);
     this.positionMarker.setRotation(this.magneticHeading);
-    
+    this.positionMarker.setPosition({ lat: this.latitude, lng: this.longitude });
+    // if(!this.inclined)this.updateCameraPosition(this.latitude, this.longitude);
+    if(this.navigationInitialized)this.updateCameraPosition(this.latitude, this.longitude);
+
     if (this.i != this.numDeltas) {
       this.i++;
       setTimeout(() => {
@@ -504,4 +437,28 @@ export class HomePage {
     }
   }
   //#endregion
+
+  //Prueba
+  inclinar() {
+
+    if (!this.inclined) {
+      this.inclined = true;
+      this.map.setPadding(290, 0, 0, 0)
+      this.map.setCameraZoom(17);
+      // this.map.setCameraBearing(90);
+      this.map.setCameraTilt(90);
+      this.positionMarker.setFlat(true);
+      this.map.setCameraTarget({ lat: this.latitude, lng: this.longitude });
+    } else {
+      this.inclined = false;
+      this.map.setPadding(0, 0, 0, 0);
+      this.map.setCameraZoom(17);
+      this.map.setCameraBearing(0);
+      this.map.setCameraTilt(30);
+      this.positionMarker.setFlat(false);
+      this.map.setCameraTarget({ lat: this.latitude, lng: this.longitude });
+    }
+
+
+  }
 }
