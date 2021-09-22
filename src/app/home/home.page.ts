@@ -8,6 +8,7 @@ import { TextToSpeech } from '@ionic-native/text-to-speech/ngx';
 import { AuthService } from '../services/auth.service';
 import { DirectionsService } from '../services/directions.service';
 import { LoadingController } from '@ionic/angular';
+import { BackgroundMode } from '@ionic-native/background-mode/ngx';
 
 // declare var plugin;
 export class StepItem {
@@ -58,7 +59,8 @@ export class HomePage {
   loading: any;
   followMarker:boolean=false;
 
-  maxZoom:number=17;
+  maxZoom:number=16;
+  dismissedApp:boolean=false;//Verifica si minimizamos la app
   constructor(
     private diagnostic: Diagnostic,
     private geolocation: Geolocation,
@@ -67,7 +69,8 @@ export class HomePage {
     private tts: TextToSpeech,
     private authService: AuthService,
     private directionsApiService: DirectionsService,
-    private loadingController: LoadingController
+    private loadingController: LoadingController,
+    private backgroundMode: BackgroundMode,
   ) {
   }
 
@@ -396,29 +399,46 @@ export class HomePage {
 
   updateMarker() {
     this.locationStateService.execChange.subscribe(data => {
-      // console.log(data['bearing'])
+      console.log(data['bearing'])
       if (this.map != null) {
-        data['latitude'];
-        data['longitude'];
-        this.magneticHeading = data['bearing'];
-        if(this.navigationInitialized){
-          this.magneticHeading = 0;
-          // this.map.setCameraBearing(data['bearing']-this.magneticHeading);
-
-          let a:CameraPosition<any> ={
-            bearing:data['bearing']-this.magneticHeading,
-            target:{
-              lat:this.latitude,
-              lng:this.longitude
-            },
-            duration:400
-          };
-
-          this.map.animateCamera(a);
+        if(this.backgroundMode.isActive()){
+          console.log("Corriendo en segundo plano")
+          this.dismissedApp = true;
         }
+        if(!this.dismissedApp){
+          data['latitude'];
+          data['longitude'];
+          this.magneticHeading = data['bearing'];
+          if(this.navigationInitialized){
+            this.magneticHeading = 0;
+            // this.map.setCameraBearing(data['bearing']-this.magneticHeading);
 
-        this.transition(data['latitude'], data['longitude']);
-        this.checkStep(data['latitude'], data['longitude']);        
+            let a:CameraPosition<any> ={
+              bearing:data['bearing']-this.magneticHeading,
+              target:{
+                lat:this.latitude,
+                lng:this.longitude
+              },
+              duration:400
+            };
+
+            this.map.animateCamera(a);
+          }
+
+          this.transition(data['latitude'], data['longitude']);
+          this.checkStep(data['latitude'], data['longitude']);   
+        }else{
+          console.log("Volvio a la app")
+          this.latitude = data['latitude'];
+          this.longitude = data['longitude'];
+          this.magneticHeading = data['bearing'];
+          if(!this.backgroundMode.isActive()){
+            this.positionMarker.setPosition({ lat: this.latitude, lng: this.longitude });
+            this.updateCameraPosition(this.latitude,this.longitude)
+            this.dismissedApp=false;
+          }
+          
+        }
       }
 
     });
@@ -514,5 +534,12 @@ export class HomePage {
     }
 
 
+  }
+
+  ionViewDidLeave(){
+    alert("leave")
+  }
+  ionViewWillLeave(){
+    alert("will")
   }
 }

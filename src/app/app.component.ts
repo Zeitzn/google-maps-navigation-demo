@@ -27,7 +27,7 @@ export class AppComponent {
 
   initializeApp(){
     this.platform.ready().then(()=>{
-      this.backgroundMode.enable();
+      this.backgroundMode.enable();      
       /**
        * Referencia: https://como-programar.net/ionic/background-geolocation/
        */
