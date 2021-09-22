@@ -1,7 +1,7 @@
 import { Component } from '@angular/core';
 import { Diagnostic } from '@ionic-native/diagnostic/ngx';
 import { Geolocation } from '@ionic-native/geolocation/ngx';
-import { GoogleMap, GoogleMapOptions, GoogleMaps, Marker, Polyline, PolylineOptions, LatLngBounds, GroundOverlayOptions } from '@ionic-native/google-maps';
+import { GoogleMap, GoogleMapOptions, GoogleMaps, Marker, Polyline, PolylineOptions, LatLngBounds, CameraPosition } from '@ionic-native/google-maps';
 import { BackgroundTrackingService } from '../services/background-tracking/background-tracking.service';
 import { LocationStateService } from '../state-management/location-state.service';
 import { TextToSpeech } from '@ionic-native/text-to-speech/ngx';
@@ -56,6 +56,9 @@ export class HomePage {
   inclined: boolean = false;
 
   loading: any;
+  followMarker:boolean=false;
+
+  maxZoom:number=17;
   constructor(
     private diagnostic: Diagnostic,
     private geolocation: Geolocation,
@@ -80,11 +83,11 @@ export class HomePage {
           lat: this.latitude,
           lng: this.longitude
         },
-        zoom: 17,
+        zoom: this.maxZoom,
       },
       controls: {
         // compass: true,
-        zoom: true,
+        zoom: false,
         mapToolbar: false,
 
       },
@@ -120,9 +123,10 @@ export class HomePage {
             rotation: this.magneticHeading,
           });
           this.positionMarker.setIconAnchor(24, 24);          
+          this.goToPosition();//TODO Descomentar si se muestra la ruta
           this.updateMarker();
           this.loading.dismiss();
-          // this.initNavigation();
+          this.initNavigation();
           // await this.getRouteInfo();//TODO Descomentar para iniciar mostrando la ruta
           this.backgroundTrackingService.StartBackgroundTracking();
         }).catch((error) => {
@@ -136,7 +140,7 @@ export class HomePage {
         alert("Activa tu GPS");
         this.loading.dismiss();
         // this._mensaje.showAlert('Mensaje', 'Active su GPS para obtener su ubicación').then(a => {
-        this.loading.dismiss();
+        // this.loading.dismiss();
 
         // });
       }
@@ -226,7 +230,7 @@ export class HomePage {
   async initNavigation() {
     // await this.getRouteInfo();
     this.goToPosition();
-    this.map.setCameraZoom(17);
+    this.map.setCameraZoom(this.maxZoom);
     // this.map.setCameraTilt(70);
     this.navigationInitialized = true;    
 
@@ -264,6 +268,33 @@ export class HomePage {
       });
       */
     //#endregion
+  }
+  //#endregion
+
+  //#region Zoom
+  /**
+   * Acercamiento
+   */
+  zoomIn(){
+    let zoom:number = this.map.getCameraZoom();
+    console.log(zoom)
+    if(zoom<this.maxZoom){
+      // this.map.setCameraZoom(zoom+1);
+      this.map.animateCameraZoomIn();
+    }
+  }
+
+  /**
+   * Alejamiento
+   */
+  zoomOut(){
+    // let zoom:number = this.map.getCameraZoom();
+    // if(zoom>1){
+      // this.map.setCameraZoom(zoom-1);
+      this.map.animateCameraZoomOut();
+      let zoom:number = this.map.getCameraZoom();
+    console.log(zoom)
+    // }
   }
   //#endregion
 
@@ -334,6 +365,10 @@ export class HomePage {
       .catch((reason: any) => this.textReaded = true);
   }
 
+  initFollowMarker(){
+    this.followMarker=!this.followMarker;
+  }
+
   /**
    * Calcúla la distancia entre 2 coordenadas geográficas
    * @param lat1 
@@ -361,17 +396,25 @@ export class HomePage {
 
   updateMarker() {
     this.locationStateService.execChange.subscribe(data => {
-      console.log(data['bearing'])
+      // console.log(data['bearing'])
       if (this.map != null) {
         data['latitude'];
         data['longitude'];
         this.magneticHeading = data['bearing'];
         if(this.navigationInitialized){
-          this.magneticHeading = 15;
-          this.map.setCameraBearing(data['bearing']-15);
-          // this.map.animateCamera({
-          //   bearing:data['bearing']-15,
-          // })
+          this.magneticHeading = 0;
+          // this.map.setCameraBearing(data['bearing']-this.magneticHeading);
+
+          let a:CameraPosition<any> ={
+            bearing:data['bearing']-this.magneticHeading,
+            target:{
+              lat:this.latitude,
+              lng:this.longitude
+            },
+            duration:400
+          };
+
+          this.map.animateCamera(a);
         }
 
         this.transition(data['latitude'], data['longitude']);
@@ -397,7 +440,7 @@ export class HomePage {
           this.steps[this.selectedStep.position].selected = true;
           this.speakText(this.selectedStep.textInstructions);
         }
-        console.log("Step position: " + step.position)
+        console.log("Step position: " + step.position);
       } else {
         this.textReaded = false
       }
@@ -408,7 +451,7 @@ export class HomePage {
   updateCameraPosition(latitude: number, longitude: number) {
     this.map.moveCamera({
       target: { lat: latitude, lng: longitude },
-    });
+    });    
   }
 
   /**
@@ -438,7 +481,7 @@ export class HomePage {
     this.positionMarker.setRotation(this.magneticHeading);
     this.positionMarker.setPosition({ lat: this.latitude, lng: this.longitude });
     // if(!this.inclined)this.updateCameraPosition(this.latitude, this.longitude);
-    if(this.navigationInitialized)this.updateCameraPosition(this.latitude, this.longitude);
+    if(this.navigationInitialized || this.followMarker)this.updateCameraPosition(this.latitude, this.longitude);
 
     if (this.i != this.numDeltas) {
       this.i++;

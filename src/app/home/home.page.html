@@ -33,22 +33,37 @@
   <div id="tracking-map">
     <ion-fab vertical="top" horizontal="end" >
       <!-- <ion-fab-button (click)="getRouteInfo()" size="small" [disabled]="origin=='' || destination == ''">
-        <ion-icon class="c-location-icon" name="map"></ion-icon>
+        <ion-icon class="" name="map"></ion-icon>
       </ion-fab-button> -->
       <ion-fab-button (click)="goToPosition()" size="small">
-        <ion-icon class="c-location-icon" name="locate"></ion-icon>
+        <ion-icon class="" name="locate"></ion-icon>
+      </ion-fab-button> 
+      <ion-fab-button (click)="initFollowMarker()" size="small">
+        <ion-icon class="" [name]="followMarker?'unlink-outline':'link-outline'"></ion-icon>
+      </ion-fab-button>
+      <ion-fab-button (click)="getRouteInfo()" size="small">
+        <ion-icon name="trending-up-outline"></ion-icon>
       </ion-fab-button>     
     </ion-fab>
 
     <ion-fab vertical="bottom" horizontal="start" >
       <ion-fab-button (click)="navigationInitialized?stopNavigation():initNavigation()" size="small">
-        <ion-icon class="c-location-icon"[name]="navigationInitialized?'square':'navigate'"></ion-icon>
+        <ion-icon class=""[name]="navigationInitialized?'square':'navigate'"></ion-icon>
       </ion-fab-button> 
+    </ion-fab>
+
+    <ion-fab vertical="bottom" horizontal="end" >
+      <ion-fab-button size="small" (click)="zoomIn()">
+        <ion-icon class=""name="add-outline"></ion-icon>
+      </ion-fab-button>
+      <ion-fab-button size="small" (click)="zoomOut()">
+        <ion-icon class=""name="remove-outline"></ion-icon>
+      </ion-fab-button>
     </ion-fab>
 
     <!-- <ion-fab vertical="top" *ngIf="!navigationInitialized" horizontal="end" style="top:80px" slot="fixed">
       <ion-fab-button (click)="refresh()" size="small">
-        <ion-icon class="c-location-icon" name="refresh"></ion-icon>
+        <ion-icon class="" name="refresh"></ion-icon>
       </ion-fab-button>
     </ion-fab> -->
   </div>
