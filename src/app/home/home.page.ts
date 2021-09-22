@@ -59,7 +59,7 @@ export class HomePage {
   loading: any;
   followMarker:boolean=false;
 
-  maxZoom:number=16;
+  defaultZoom:number=17;
   dismissedApp:boolean=false;//Verifica si minimizamos la app
   constructor(
     private diagnostic: Diagnostic,
@@ -86,7 +86,7 @@ export class HomePage {
           lat: this.latitude,
           lng: this.longitude
         },
-        zoom: this.maxZoom,
+        zoom: this.defaultZoom,
       },
       controls: {
         // compass: true,
@@ -233,7 +233,7 @@ export class HomePage {
   async initNavigation() {
     // await this.getRouteInfo();
     this.goToPosition();
-    this.map.setCameraZoom(this.maxZoom);
+    this.map.setCameraZoom(this.defaultZoom);
     // this.map.setCameraTilt(70);
     this.navigationInitialized = true;    
 
@@ -279,25 +279,14 @@ export class HomePage {
    * Acercamiento
    */
   zoomIn(){
-    let zoom:number = this.map.getCameraZoom();
-    console.log(zoom)
-    if(zoom<this.maxZoom){
-      // this.map.setCameraZoom(zoom+1);
-      this.map.animateCameraZoomIn();
-    }
+    this.map.animateCameraZoomIn();
   }
 
   /**
    * Alejamiento
    */
-  zoomOut(){
-    // let zoom:number = this.map.getCameraZoom();
-    // if(zoom>1){
-      // this.map.setCameraZoom(zoom-1);
-      this.map.animateCameraZoomOut();
-      let zoom:number = this.map.getCameraZoom();
-    console.log(zoom)
-    // }
+  zoomOut(){  
+    this.map.animateCameraZoomOut();
   }
   //#endregion
 
