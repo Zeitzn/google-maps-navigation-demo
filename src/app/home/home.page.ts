@@ -129,7 +129,7 @@ export class HomePage {
           this.goToPosition();//TODO Descomentar si se muestra la ruta
           this.updateMarker();
           this.loading.dismiss();
-          this.initNavigation();
+          // this.initNavigation();
           // await this.getRouteInfo();//TODO Descomentar para iniciar mostrando la ruta
           this.backgroundTrackingService.StartBackgroundTracking();
         }).catch((error) => {
@@ -325,14 +325,14 @@ export class HomePage {
               lat: step.startLocation.lat,
               lng: step.startLocation.lng
             },
-            title: step.position.toString()
+            title: step.textInstructions
           });
           position++;
         });
       });
     });
     console.log(this.steps)
-    this.map.setPadding(300, 0, 0, 0);
+    // this.map.setPadding(300, 0, 0, 0);
   }
 
   goToPosition() {

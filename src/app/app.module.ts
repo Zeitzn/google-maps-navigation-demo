@@ -12,6 +12,7 @@ import { BackgroundGeolocation } from '@ionic-native/background-geolocation/ngx'
 import { TextToSpeech } from '@ionic-native/text-to-speech/ngx';
 import { BackgroundMode } from '@ionic-native/background-mode/ngx';
 import { HttpClientModule, HTTP_INTERCEPTORS } from '@angular/common/http';
+import { Insomnia } from '@ionic-native/insomnia/ngx';
 import { AuthInterceptorService } from './services/auth-interceptor.service';
 @NgModule({
   declarations: [AppComponent],
@@ -30,7 +31,8 @@ import { AuthInterceptorService } from './services/auth-interceptor.service';
     DeviceMotion,
     BackgroundGeolocation,
     BackgroundMode,
-    TextToSpeech
+    TextToSpeech,
+    Insomnia
   ],
   bootstrap: [AppComponent],
 })

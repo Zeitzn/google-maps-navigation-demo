@@ -1,12 +1,13 @@
 import { Component } from '@angular/core';
-import { 
+import {
   BackgroundGeolocation,
   BackgroundGeolocationConfig,
   BackgroundGeolocationEvents,
   BackgroundGeolocationLocationProvider,
-  BackgroundGeolocationResponse  
+  BackgroundGeolocationResponse
 } from '@ionic-native/background-geolocation/ngx';
 import { BackgroundMode } from '@ionic-native/background-mode/ngx';
+import { Insomnia } from '@ionic-native/insomnia/ngx';
 import { Platform } from '@ionic/angular';
 import { LocationStateService } from './state-management/location-state.service';
 declare var window;
@@ -20,14 +21,20 @@ export class AppComponent {
     private platform: Platform,
     private backgroundGeolocation: BackgroundGeolocation,
     private backgroundMode: BackgroundMode,
-    private locationStateService:LocationStateService
+    private locationStateService: LocationStateService,
+    private insomnia: Insomnia
   ) {
     this.initializeApp();
   }
 
-  initializeApp(){
-    this.platform.ready().then(()=>{
-      this.backgroundMode.enable();      
+  initializeApp() {
+    this.platform.ready().then(() => {
+      this.backgroundMode.enable();
+      this.insomnia.keepAwake()
+        .then(
+          () => console.log('success'),
+          () => console.log('error')
+        );
       /**
        * Referencia: https://como-programar.net/ionic/background-geolocation/
        */
@@ -44,27 +51,27 @@ export class AppComponent {
 
         //Estas solo están disponibles para Android
         // locationProvider: 1, //Será el proveedor de localización. Gps, Wifi, Gms, etc...
-        locationProvider:BackgroundGeolocationLocationProvider.ACTIVITY_PROVIDER,
+        locationProvider: BackgroundGeolocationLocationProvider.ACTIVITY_PROVIDER,
         startForeground: true,
         interval: 50, //El intervalo en el que se comprueba la localización.
         fastestInterval: 50, //Este para cuando está en movimiento.
         //  activitiesInterval: 10000, //Este es para cuando está realizando alguna actividad con el dispositivo.
       };
 
-      this.backgroundGeolocation.configure(config).then(()=>{
+      this.backgroundGeolocation.configure(config).then(() => {
         this.backgroundGeolocation.on
-        (BackgroundGeolocationEvents.location).subscribe(
-          (location:BackgroundGeolocationResponse)=>{
-            // console.log(location)
-            // localStorage.setItem("location",JSON.stringify(location));
+          (BackgroundGeolocationEvents.location).subscribe(
+            (location: BackgroundGeolocationResponse) => {
+              // console.log(location)
+              // localStorage.setItem("location",JSON.stringify(location));
 
-            // this.event.dispatchEvent('backgroundLocation');
-            this.locationStateService.change(location);
-            // console.log(location)
-          }
-        );
+              // this.event.dispatchEvent('backgroundLocation');
+              this.locationStateService.change(location);
+              // console.log(location)
+            }
+          );
       });
-      window.app=this;
+      window.app = this;
     });
   }
 }

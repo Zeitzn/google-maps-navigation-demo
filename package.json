@@ -27,6 +27,7 @@
     "@ionic-native/diagnostic": "^5.32.0",
     "@ionic-native/geolocation": "^5.36.0",
     "@ionic-native/google-maps": "^5.5.0",
+    "@ionic-native/insomnia": "^5.36.0",
     "@ionic-native/text-to-speech": "^5.32.0",
     "@ionic/angular": "^5.5.2",
     "@mauron85/cordova-plugin-background-geolocation": "^3.1.0",
@@ -38,6 +39,7 @@
     "cordova-plugin-device-orientation": "^2.0.1",
     "cordova-plugin-geolocation": "^4.1.0",
     "cordova-plugin-googlemaps": "^2.7.1",
+    "cordova-plugin-insomnia": "^4.3.0",
     "cordova-plugin-tts": "^0.2.3",
     "cordova.plugins.diagnostic": "^6.0.3",
     "rxjs": "~6.6.0",
@@ -107,7 +109,8 @@
       },
       "cordova-plugin-geolocation": {
         "GPS_REQUIRED": "true"
-      }
+      },
+      "cordova-plugin-insomnia": {}
     },
     "platforms": [
       "android"
