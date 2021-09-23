@@ -1,7 +1,7 @@
 import { Component } from '@angular/core';
 import { Diagnostic } from '@ionic-native/diagnostic/ngx';
 import { Geolocation } from '@ionic-native/geolocation/ngx';
-import { GoogleMap, GoogleMapOptions, GoogleMaps, Marker, Polyline, PolylineOptions, LatLngBounds, CameraPosition } from '@ionic-native/google-maps';
+import { GoogleMap, GoogleMapOptions, GoogleMaps, Marker, Polyline, PolylineOptions, LatLngBounds, CameraPosition, LatLng, Poly } from '@ionic-native/google-maps';
 import { BackgroundTrackingService } from '../services/background-tracking/background-tracking.service';
 import { LocationStateService } from '../state-management/location-state.service';
 import { TextToSpeech } from '@ionic-native/text-to-speech/ngx';
@@ -44,7 +44,10 @@ export class HomePage {
 
   calculatingDistance: boolean = false;
 
+  polylinePath:LatLng[]=[];
   routePolyline: Polyline;
+  routePolylineBorder: Polyline;
+  outOfPolylineCount:number=0;
 
   // Variables para deslizamiento suave del marcador
   numDeltas: number = 20;
@@ -153,7 +156,7 @@ export class HomePage {
   }
 
   //#region Ruta
-  async getRouteInfo() {
+  async getRouteInfo(fitBounds:boolean) {
     this.loading = await this.loadingController.create({
       message: 'Obteniendo datos de la ruta'
     });
@@ -194,29 +197,47 @@ export class HomePage {
       this.directionsApiService.getDirections(coord).subscribe((response: any) => {
         console.log(response)
         //Renderizamos la ruta
-        var path = response['overview_path'];
-        let options: PolylineOptions = {
-          points: path,
-          color: '#232C49',
+        // var path = response['overview_path'];
+        this.polylinePath = response['overview_path'];
+        let borderOptions: PolylineOptions = {
+          points: this.polylinePath,
+          color: '#1967d2',
           width: 8,
           geodesic: true,
-          clickable: true,
+          clickable: true
         };
+        let options: PolylineOptions = {
+          points: this.polylinePath,
+          color: '#669df6',
+          width: 5,
+          geodesic: true,
+          clickable: true
+        };
+        
+        if(this.routePolyline){
+          this.routePolyline.remove();
+        }
+        if(this.routePolylineBorder){
+          this.routePolylineBorder.remove();
+        }
+        this.routePolyline = this.map.addPolylineSync(borderOptions);
+        this.routePolylineBorder = this.map.addPolylineSync(options);
 
-        this.routePolyline = this.map.addPolylineSync(options);
-
-        let bounds = new LatLngBounds();
-        path.forEach(element => {
-          bounds.extend(element);
-        });
-
-        this.map.animateCamera({
-          target: path,
-          tilt: 0,
-          duration: 1000
-        });
+        if(fitBounds){
+          // let bounds = new LatLngBounds();
+          // this.polylinePath.forEach(element => {
+          //   bounds.extend(element);
+          // });  
+          this.map.animateCamera({
+            target: this.polylinePath,
+            tilt: 0,
+            duration: 1000
+          });
+        }
+       
 
         this.formatSteps(response);
+        this.outOfPolylineCount = 0;
         this.loading.dismiss();
       }, error => {
         this.loading.dismiss();
@@ -226,6 +247,23 @@ export class HomePage {
       this.loading.dismiss();
       alert("Ha ocurrido un error en la autenticación");
     });
+  }
+
+  verifyPositionInRoute(latitude:number,longitude:number){
+    if(this.polylinePath.length>2){
+      console.log("qwe")
+     let intoPolyline = Poly.isLocationOnEdge({
+      lat:latitude,
+      lng:longitude
+    },this.polylinePath);
+      console.log(intoPolyline)
+      if(!intoPolyline){
+        this.outOfPolylineCount++;
+        if(this.outOfPolylineCount==10){
+          this.getRouteInfo(false)
+        }
+      }
+   }
   }
   //#endregion
 
@@ -388,7 +426,10 @@ export class HomePage {
 
   updateMarker() {
     this.locationStateService.execChange.subscribe(data => {
-      console.log(data['bearing'])
+      console.log(data)
+      
+      
+
       if (this.map != null) {
         if(this.backgroundMode.isActive()){
           console.log("Corriendo en segundo plano")
@@ -410,8 +451,8 @@ export class HomePage {
               },
               duration:400
             };
-
             this.map.animateCamera(a);
+            this.verifyPositionInRoute(data['latitude'],data['longitude']);
           }
 
           this.transition(data['latitude'], data['longitude']);
