@@ -65,6 +65,7 @@ export class HomePage {
   followMarker: boolean = false;
 
   defaultZoom: number = 17;
+  zoomInProcess:boolean = false;
   dismissedApp: boolean = false;//Verifica si minimizamos la app
 
   //Para pruebas de origen y destino
@@ -307,8 +308,13 @@ export class HomePage {
       console.log(intoPolyline)
       if (!intoPolyline) {
         this.outOfPolylineCount++;
-        if (this.outOfPolylineCount == 10) {
-          this.getRouteInfo(false)
+        if (this.outOfPolylineCount == 10) {          
+          let coord = this.polylinePath.find(x => (parseFloat(this.coordinatesDistance(x.lat, x.lng, latitude, longitude)) * 1000) <= 20);
+          if(coord==null || coord === undefined){
+            this.getRouteInfo(false);
+          }else{
+            this.outOfPolylineCount = 0;
+          }
         }
       }
     }
@@ -327,6 +333,7 @@ export class HomePage {
 
   stopNavigation() {
     this.navigationInitialized = false;
+    this.positionMarker.setRotation(0);
     this.map.setCameraBearing(0);
     this.map.setPadding(this.navigationInitialized ? 0 : 0, 0, 0, 0)
     // this.routePolyline.remove();
@@ -365,14 +372,20 @@ export class HomePage {
    * Acercamiento
    */
   zoomIn() {
-    this.map.animateCameraZoomIn();
+    this.zoomInProcess = true;
+    this.map.animateCameraZoomIn().finally(()=>{
+      this.zoomInProcess = false;
+    });
   }
 
   /**
    * Alejamiento
    */
   zoomOut() {
-    this.map.animateCameraZoomOut();
+    this.zoomInProcess = true;
+    this.map.animateCameraZoomOut().finally(()=>{
+      this.zoomInProcess = false;
+    });
   }
   //#endregion
 
@@ -470,7 +483,7 @@ export class HomePage {
   }
   //#endregion
 
-  //#region Deslizamiento suave de marcador 
+  //#region Deslizamiento del marcador 
 
   updateMarker() {
     this.locationStateService.execChange.subscribe(data => {
@@ -484,6 +497,7 @@ export class HomePage {
           data['latitude'];
           data['longitude'];
           this.magneticHeading = data['bearing'];
+          console.log(this.magneticHeading)
           if (this.navigationInitialized) {
             this.magneticHeading = 0;
             // this.map.setCameraBearing(data['bearing']-this.magneticHeading);
