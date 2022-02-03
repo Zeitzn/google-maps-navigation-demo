@@ -8,7 +8,10 @@ export const environment = {
     host:'https://backend-dev.mivolco.com/',
     // host:'http://192.168.1.9:8080/',
     token_name:'token'
-  }
+  },
+  mapbox: {
+		accessToken: 'pk.eyJ1IjoiemVpdHpuMiIsImEiOiJja3RsdnlqbW8xenBrMnFubWp2azhmeGVhIn0.6SLmgUbqiGEN6NOPK04JHQ'
+	}
 };
 
 /*

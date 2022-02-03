@@ -51,10 +51,10 @@ export class AppComponent {
 
         //Estas solo están disponibles para Android
         // locationProvider: 1, //Será el proveedor de localización. Gps, Wifi, Gms, etc...
-        locationProvider: BackgroundGeolocationLocationProvider.ACTIVITY_PROVIDER,
+        locationProvider: BackgroundGeolocationLocationProvider.RAW_PROVIDER,
         startForeground: true,
-        interval: 50, //El intervalo en el que se comprueba la localización.
-        fastestInterval: 50, //Este para cuando está en movimiento.
+        interval: 2000, //El intervalo en el que se comprueba la localización.
+        fastestInterval: 2000, //Este para cuando está en movimiento.
         //  activitiesInterval: 10000, //Este es para cuando está realizando alguna actividad con el dispositivo.
       };
 
@@ -62,7 +62,7 @@ export class AppComponent {
         this.backgroundGeolocation.on
           (BackgroundGeolocationEvents.location).subscribe(
             (location: BackgroundGeolocationResponse) => {
-              // console.log(location)
+              console.log(location)
               // localStorage.setItem("location",JSON.stringify(location));
 
               // this.event.dispatchEvent('backgroundLocation');

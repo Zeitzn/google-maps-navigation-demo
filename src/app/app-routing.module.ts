@@ -8,9 +8,14 @@ const routes: Routes = [
   },
   {
     path: '',
-    redirectTo: 'home',
+    redirectTo: 'mapbox-gl',
     pathMatch: 'full'
   },
+  {
+    path: 'mapbox-gl',
+    loadChildren: () => import('./mapbox-gl/mapbox-gl.module').then( m => m.MapboxGlPageModule)
+  },
+
 ];
 
 @NgModule({

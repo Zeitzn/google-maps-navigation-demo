@@ -1,0 +1,36 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-title>android-10-2.7.0-1</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content>
+  <div id="map"></div>
+    <ion-fab vertical="top" horizontal="end" >
+      <ion-fab-button (click)="goToPosition()" size="small">
+        <ion-icon class="" name="locate"></ion-icon>
+      </ion-fab-button> 
+      <!-- <ion-fab-button (click)="initFollowMarker()" size="small">
+        <ion-icon class="" [name]="followMarker?'unlink-outline':'link-outline'"></ion-icon>
+      </ion-fab-button>       -->
+      <ion-fab-button (click)="changeBackgroundGeolocation(backGeoActivated?false:true)" size="small">
+        <ion-icon class="c-location-icon" [name]="backGeoActivated?'eye-outline':'eye-off-outline'"></ion-icon>
+    </ion-fab-button>
+    </ion-fab>
+
+    <ion-fab vertical="bottom" horizontal="start" >
+      <ion-fab-button (click)="navigationInitialized?stopNavigation():initNavigation()" size="small">
+        <ion-icon class=""[name]="navigationInitialized?'square':'navigate'"></ion-icon>
+      </ion-fab-button> 
+    </ion-fab>
+
+    <ion-fab vertical="bottom" horizontal="end" >
+      <ion-fab-button size="small" [disabled]="zoomInProcess" (click)="zoomIn()">
+        <ion-icon class=""name="add-outline"></ion-icon>
+      </ion-fab-button>
+      <ion-fab-button size="small" [disabled]="zoomInProcess" (click)="zoomOut()">
+        <ion-icon class=""name="remove-outline"></ion-icon>
+      </ion-fab-button>
+    </ion-fab>    
+  
+</ion-content>

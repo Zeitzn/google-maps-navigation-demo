@@ -3,14 +3,14 @@
     <ion-title>
       Navegación      
     </ion-title>
-    <!-- <ion-item>
+    <ion-item>
       <ion-label>Origen:</ion-label>
       <ion-input [(ngModel)]="origin" placeholder="lat,lng"></ion-input>
     </ion-item>
     <ion-item>
       <ion-label>Destino:</ion-label>
       <ion-input [(ngModel)]="destination" placeholder="lat,lng"></ion-input>
-    </ion-item> -->
+    </ion-item>
     <!-- <div [innerHTML]="selectedStep?.htmlInstructions"></div> -->
   </ion-toolbar>
 </ion-header>
@@ -43,7 +43,10 @@
       </ion-fab-button>
       <ion-fab-button (click)="getRouteInfo(true)" size="small">
         <ion-icon name="trending-up-outline"></ion-icon>
-      </ion-fab-button>     
+      </ion-fab-button>
+      <ion-fab-button (click)="changeBackgroundGeolocation(backGeoActivated?false:true)" size="small">
+        <ion-icon class="c-location-icon" [name]="backGeoActivated?'eye-outline':'eye-off-outline'"></ion-icon>
+    </ion-fab-button>
     </ion-fab>
 
     <ion-fab vertical="bottom" horizontal="start" >

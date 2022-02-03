@@ -8,7 +8,7 @@ import { environment } from 'src/environments/environment';
 })
 export class DirectionsService {
   private apiUrl: string = `${environment.config.host}directionsApi`;
-  constructor(public http: HttpClient) {}
+  constructor(private http: HttpClient) {}
 
    /*
   * Método para obtener la ruta en formato json a partir de la api directions de google maps

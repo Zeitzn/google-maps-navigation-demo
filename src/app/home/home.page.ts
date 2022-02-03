@@ -41,8 +41,8 @@ export class HomePage {
 
   // origin: string = '6.3367287999999995,-75.55958869999999';
   // destination: string = '6.437951699999999,-75.3318156';
-  origin: string = '';
-  destination: string = '';
+  origin: string = '6.3367287999999995,-75.55958869999999';
+  destination: string = '6.437951699999999,-75.3318156';
 
   calculatingDistance: boolean = false;
 
@@ -53,7 +53,7 @@ export class HomePage {
 
   // Variables para deslizamiento suave del marcador
   numDeltas: number = 20;
-  delay: number = 10; //milliseconds
+  delay: number = 50; //milliseconds
   i: number = 0;
   deltaLat: number = 0;
   deltaLng: number = 0;
@@ -183,7 +183,7 @@ export class HomePage {
           this.loading.dismiss();
           // this.initNavigation();
           // await this.getRouteInfo();//TODO Descomentar para iniciar mostrando la ruta
-          this.backgroundTrackingService.StartBackgroundTracking();
+          this.changeBackgroundGeolocation(true);
         }).catch((error) => {
           console.log(error)
           this.loading.dismiss();
@@ -487,7 +487,7 @@ export class HomePage {
 
   updateMarker() {
     this.locationStateService.execChange.subscribe(data => {
-      // console.log(data)
+      console.log(data)
       if (this.map != null) {
         if (this.backgroundMode.isActive()) {
           console.log("Corriendo en segundo plano")
@@ -624,6 +624,18 @@ export class HomePage {
 
 
   }
+
+  //#region Estado de geolocalización
+  backGeoActivated: boolean = false;
+  changeBackgroundGeolocation(activate: boolean) {
+    if (activate) {
+      this.backgroundTrackingService.StartBackgroundTracking();
+    } else {
+      this.backgroundTrackingService.StopBackgroundGeolocation();
+    }
+    this.backGeoActivated = activate;
+  }
+  //#endregion
 
   ionViewDidLeave() {
     alert("leave")
