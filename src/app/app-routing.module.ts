@@ -15,6 +15,11 @@ const routes: Routes = [
     path: 'mapbox-gl',
     loadChildren: () => import('./mapbox-gl/mapbox-gl.module').then( m => m.MapboxGlPageModule)
   },
+  {
+    path: 'mapbox-gl-offline',
+    loadChildren: () => import('./mapbox-gl-offline/mapbox-gl-offline.module').then( m => m.MapboxGlOfflinePageModule)
+  },
+
 
 ];
 

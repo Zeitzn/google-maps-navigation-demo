@@ -5,7 +5,7 @@ import { Geolocation } from '@ionic-native/geolocation/ngx';
 import { LatLng } from '@ionic-native/google-maps';
 import { TextToSpeech } from '@ionic-native/text-to-speech/ngx';
 import { LoadingController } from '@ionic/angular';
-import * as mapboxgl from 'mapbox-gl';
+import * as mapboxgl from '@yermo/maplibre-gl-capacitor-offline';
 import { environment } from 'src/environments/environment';
 import { AuthService } from '../services/auth.service';
 import { BackgroundTrackingService } from '../services/background-tracking/background-tracking.service';
@@ -21,11 +21,11 @@ export class StepItem {
   instructions: string;
 }
 @Component({
-  selector: 'app-mapbox-gl',
-  templateUrl: './mapbox-gl.page.html',
-  styleUrls: ['./mapbox-gl.page.scss'],
+  selector: 'app-mapbox-gl-offline',
+  templateUrl: './mapbox-gl-offline.page.html',
+  styleUrls: ['./mapbox-gl-offline.page.scss'],
 })
-export class MapboxGlPage implements OnInit {
+export class MapboxGlOfflinePage implements OnInit {
 
   magneticHeading: number = 0;
   navigationInitialized: boolean = false;
@@ -102,17 +102,24 @@ export class MapboxGlPage implements OnInit {
   }
 
   async loadMap() {
-    this.mapbox = window['map'] = new mapboxgl.Map({
-      container: 'map',
-      style: `mapbox://styles/mapbox/light-v10?optimize=true`,
-      zoom: 15,
-      center: [this.longitude, this.latitude],
-    });
+    // this.mapbox = window['map'] = new mapboxgl.Map({
+    //   container: 'map',
+    //   style: `mapbox://styles/mapbox/light-v10`,
+    //   zoom: 15,
+    //   center: [this.longitude, this.latitude],
+    // });
 
-    this.mapbox.on('load', () => {
-      this.mapbox.resize();
-      this.getLocation();
-    });   
+    // this.mapbox.on('load', () => {
+    //   this.mapbox.resize();
+    //   this.getLocation();
+    // }); 
+    
+    new mapboxgl.OfflineMap({
+      container: 'map',
+      style: 'assets/mapboxgl-offline/style-offline.json'
+    }).then(function(map) {
+        map.addControl(new mapboxgl.NavigationControl());
+    });
 
    
   }

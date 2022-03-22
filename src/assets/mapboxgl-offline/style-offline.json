@@ -1,0 +1,8 @@
+{
+    "sources": {
+        "openmaptiles": {
+            "type": "mbtiles",
+            "path": "data/2017-07-03_spain_barcelona.mbtiles"
+        }
+    }
+}
